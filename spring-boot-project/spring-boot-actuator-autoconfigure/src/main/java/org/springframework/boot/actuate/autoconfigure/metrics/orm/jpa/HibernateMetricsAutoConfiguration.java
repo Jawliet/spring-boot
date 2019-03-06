@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.util.Collections;
 import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.jpa.HibernateMetrics;
+import org.hibernate.SessionFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
@@ -46,29 +48,31 @@ import org.springframework.util.StringUtils;
 @Configuration
 @AutoConfigureAfter({ MetricsAutoConfiguration.class, HibernateJpaAutoConfiguration.class,
 		SimpleMetricsExportAutoConfiguration.class })
-@ConditionalOnClass({ EntityManagerFactory.class, MeterRegistry.class })
+@ConditionalOnClass({ EntityManagerFactory.class, SessionFactory.class,
+		MeterRegistry.class })
 @ConditionalOnBean({ EntityManagerFactory.class, MeterRegistry.class })
 public class HibernateMetricsAutoConfiguration {
 
 	private static final String ENTITY_MANAGER_FACTORY_SUFFIX = "entityManagerFactory";
 
-	private final MeterRegistry registry;
-
-	public HibernateMetricsAutoConfiguration(MeterRegistry registry) {
-		this.registry = registry;
-	}
-
 	@Autowired
 	public void bindEntityManagerFactoriesToRegistry(
-			Map<String, EntityManagerFactory> entityManagerFactories) {
-		entityManagerFactories.forEach(this::bindEntityManagerFactoryToRegistry);
+			Map<String, EntityManagerFactory> entityManagerFactories,
+			MeterRegistry registry) {
+		entityManagerFactories.forEach((name,
+				factory) -> bindEntityManagerFactoryToRegistry(name, factory, registry));
 	}
 
 	private void bindEntityManagerFactoryToRegistry(String beanName,
-			EntityManagerFactory entityManagerFactory) {
+			EntityManagerFactory entityManagerFactory, MeterRegistry registry) {
 		String entityManagerFactoryName = getEntityManagerFactoryName(beanName);
-		new HibernateMetrics(entityManagerFactory, entityManagerFactoryName,
-				Collections.emptyList()).bindTo(this.registry);
+		try {
+			new HibernateMetrics(entityManagerFactory.unwrap(SessionFactory.class),
+					entityManagerFactoryName, Collections.emptyList()).bindTo(registry);
+		}
+		catch (PersistenceException ex) {
+			// Continue
+		}
 	}
 
 	/**

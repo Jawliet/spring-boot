@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.apache.http.client.config.RequestConfig;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -47,6 +48,7 @@ import org.springframework.web.util.UriTemplateHandler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -331,16 +333,6 @@ public class RestTemplateBuilderTests {
 	}
 
 	@Test
-	@Deprecated
-	public void basicAuthorizationShouldApply() {
-		RestTemplate template = this.builder.basicAuthorization("spring", "boot").build();
-		ClientHttpRequestInterceptor interceptor = template.getInterceptors().get(0);
-		assertThat(interceptor).isInstanceOf(BasicAuthenticationInterceptor.class);
-		assertThat(interceptor).extracting("username").containsExactly("spring");
-		assertThat(interceptor).extracting("password").containsExactly("boot");
-	}
-
-	@Test
 	public void customizersWhenCustomizersAreNullShouldThrowException() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(
@@ -401,8 +393,9 @@ public class RestTemplateBuilderTests {
 		RestTemplateCustomizer customizer2 = mock(RestTemplateCustomizer.class);
 		RestTemplate template = this.builder.customizers(customizer1)
 				.additionalCustomizers(customizer2).build();
-		verify(customizer1).customize(template);
-		verify(customizer2).customize(template);
+		InOrder ordered = inOrder(customizer1, customizer2);
+		ordered.verify(customizer1).customize(template);
+		ordered.verify(customizer2).customize(template);
 	}
 
 	@Test
@@ -549,24 +542,6 @@ public class RestTemplateBuilderTests {
 				.build();
 		assertThat(template.getRequestFactory())
 				.isInstanceOf(BufferingClientHttpRequestFactory.class);
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void connectTimeoutCanBeSetWithInteger() {
-		ClientHttpRequestFactory requestFactory = this.builder
-				.requestFactory(SimpleClientHttpRequestFactory.class)
-				.setConnectTimeout(1234).build().getRequestFactory();
-		assertThat(requestFactory).hasFieldOrPropertyWithValue("connectTimeout", 1234);
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void readTimeoutCanBeSetWithInteger() {
-		ClientHttpRequestFactory requestFactory = this.builder
-				.requestFactory(SimpleClientHttpRequestFactory.class).setReadTimeout(1234)
-				.build().getRequestFactory();
-		assertThat(requestFactory).hasFieldOrPropertyWithValue("readTimeout", 1234);
 	}
 
 	public static class RestTemplateSubclass extends RestTemplate {

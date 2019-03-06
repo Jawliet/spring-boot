@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package org.springframework.boot.actuate.autoconfigure.health;
 
-import java.util.Collections;
 import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.health.ApplicationHealthIndicator;
 import org.springframework.boot.actuate.health.HealthAggregator;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -51,12 +49,6 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({ HealthIndicatorProperties.class })
 public class HealthIndicatorAutoConfiguration {
 
-	private final HealthIndicatorProperties properties;
-
-	public HealthIndicatorAutoConfiguration(HealthIndicatorProperties properties) {
-		this.properties = properties;
-	}
-
 	@Bean
 	@ConditionalOnMissingBean({ HealthIndicator.class, ReactiveHealthIndicator.class })
 	public ApplicationHealthIndicator applicationHealthIndicator() {
@@ -65,10 +57,11 @@ public class HealthIndicatorAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(HealthAggregator.class)
-	public OrderedHealthAggregator healthAggregator() {
+	public OrderedHealthAggregator healthAggregator(
+			HealthIndicatorProperties properties) {
 		OrderedHealthAggregator healthAggregator = new OrderedHealthAggregator();
-		if (this.properties.getOrder() != null) {
-			healthAggregator.setStatusOrder(this.properties.getOrder());
+		if (properties.getOrder() != null) {
+			healthAggregator.setStatusOrder(properties.getOrder());
 		}
 		return healthAggregator;
 	}
@@ -87,13 +80,11 @@ public class HealthIndicatorAutoConfiguration {
 		@Bean
 		@ConditionalOnMissingBean
 		public ReactiveHealthIndicatorRegistry reactiveHealthIndicatorRegistry(
-				ObjectProvider<Map<String, ReactiveHealthIndicator>> reactiveHealthIndicators,
-				ObjectProvider<Map<String, HealthIndicator>> healthIndicators) {
+				Map<String, ReactiveHealthIndicator> reactiveHealthIndicators,
+				Map<String, HealthIndicator> healthIndicators) {
 			return new ReactiveHealthIndicatorRegistryFactory()
-					.createReactiveHealthIndicatorRegistry(
-							reactiveHealthIndicators
-									.getIfAvailable(Collections::emptyMap),
-							healthIndicators.getIfAvailable(Collections::emptyMap));
+					.createReactiveHealthIndicatorRegistry(reactiveHealthIndicators,
+							healthIndicators);
 		}
 
 	}

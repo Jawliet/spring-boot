@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -32,8 +31,6 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-
-import org.springframework.boot.configurationprocessor.fieldvalues.FieldValuesParser;
 
 /**
  * Provides access to relevant {@link TypeElement} members.
@@ -46,9 +43,7 @@ class TypeElementMembers {
 
 	private static final String OBJECT_CLASS_NAME = Object.class.getName();
 
-	private final ProcessingEnvironment env;
-
-	private final TypeUtils typeUtils;
+	private final MetadataGenerationEnvironment env;
 
 	private final Map<String, VariableElement> fields = new LinkedHashMap<>();
 
@@ -56,15 +51,8 @@ class TypeElementMembers {
 
 	private final Map<String, List<ExecutableElement>> publicSetters = new LinkedHashMap<>();
 
-	private final Map<String, Object> fieldValues = new LinkedHashMap<>();
-
-	private final FieldValuesParser fieldValuesParser;
-
-	TypeElementMembers(ProcessingEnvironment env, FieldValuesParser fieldValuesParser,
-			TypeElement element) {
+	TypeElementMembers(MetadataGenerationEnvironment env, TypeElement element) {
 		this.env = env;
-		this.typeUtils = new TypeUtils(this.env);
-		this.fieldValuesParser = fieldValuesParser;
 		process(element);
 	}
 
@@ -77,19 +65,8 @@ class TypeElementMembers {
 				.fieldsIn(element.getEnclosedElements())) {
 			processField(field);
 		}
-		try {
-			this.fieldValuesParser.getFieldValues(element).forEach((name, value) -> {
-				if (!this.fieldValues.containsKey(name)) {
-					this.fieldValues.put(name, value);
-				}
-			});
-		}
-		catch (Exception ex) {
-			// continue
-		}
-
 		Element superType = this.env.getTypeUtils().asElement(element.getSuperclass());
-		if (superType != null && superType instanceof TypeElement
+		if (superType instanceof TypeElement
 				&& !OBJECT_CLASS_NAME.equals(superType.toString())) {
 			process((TypeElement) superType);
 		}
@@ -104,11 +81,7 @@ class TypeElementMembers {
 			else if (isSetter(method)) {
 				String propertyName = getAccessorName(name);
 				List<ExecutableElement> matchingSetters = this.publicSetters
-						.get(propertyName);
-				if (matchingSetters == null) {
-					matchingSetters = new ArrayList<>();
-					this.publicSetters.put(propertyName, matchingSetters);
-				}
+						.computeIfAbsent(propertyName, (k) -> new ArrayList<>());
 				TypeMirror paramType = method.getParameters().get(0).asType();
 				if (getMatchingSetter(matchingSetters, paramType) == null) {
 					matchingSetters.add(method);
@@ -184,7 +157,8 @@ class TypeElementMembers {
 			if (this.env.getTypeUtils().isSameType(returnType, type)) {
 				return candidate;
 			}
-			TypeMirror alternative = this.typeUtils.getWrapperOrPrimitiveFor(type);
+			TypeMirror alternative = this.env.getTypeUtils()
+					.getWrapperOrPrimitiveFor(type);
 			if (alternative != null
 					&& this.env.getTypeUtils().isSameType(returnType, alternative)) {
 				return candidate;
@@ -200,16 +174,13 @@ class TypeElementMembers {
 			if (matching != null) {
 				return matching;
 			}
-			TypeMirror alternative = this.typeUtils.getWrapperOrPrimitiveFor(type);
+			TypeMirror alternative = this.env.getTypeUtils()
+					.getWrapperOrPrimitiveFor(type);
 			if (alternative != null) {
 				return getMatchingSetter(candidates, alternative);
 			}
 		}
 		return null;
-	}
-
-	public Map<String, Object> getFieldValues() {
-		return Collections.unmodifiableMap(this.fieldValues);
 	}
 
 }

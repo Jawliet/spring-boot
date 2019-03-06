@@ -41,12 +41,21 @@ public enum ManagementPortType {
 	 */
 	DIFFERENT;
 
-	static ManagementPortType get(Environment environment) {
-		Integer serverPort = getPortProperty(environment, "server.");
+	/**
+	 * Look at the given environment to determine if the {@link ManagementPortType} is
+	 * {@link #DISABLED}, {@link #SAME} or {@link #DIFFERENT}.
+	 * @param environment the Spring environment
+	 * @return {@link #DISABLED} if `management.server.port` is set to a negative value,
+	 * {@link #SAME} if `management.server.port` is not specified or equal to
+	 * `server.port`and {@link #DIFFERENT} otherwise.
+	 * @since 2.1.4
+	 */
+	public static ManagementPortType get(Environment environment) {
 		Integer managementPort = getPortProperty(environment, "management.server.");
 		if (managementPort != null && managementPort < 0) {
 			return DISABLED;
 		}
+		Integer serverPort = getPortProperty(environment, "server.");
 		return ((managementPort == null
 				|| (serverPort == null && managementPort.equals(8080))
 				|| (managementPort != 0 && managementPort.equals(serverPort))) ? SAME

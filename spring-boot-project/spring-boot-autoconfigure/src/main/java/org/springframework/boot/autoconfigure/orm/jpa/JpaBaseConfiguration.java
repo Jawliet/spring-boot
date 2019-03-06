@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.boot.autoconfigure.domain.EntityScanPackages;
 import org.springframework.boot.autoconfigure.transaction.TransactionManagerCustomizers;
+import org.springframework.boot.autoconfigure.web.servlet.ConditionalOnMissingFilterBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
@@ -80,27 +81,22 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
 
 	private final JtaTransactionManager jtaTransactionManager;
 
-	private final TransactionManagerCustomizers transactionManagerCustomizers;
-
 	private ConfigurableListableBeanFactory beanFactory;
 
 	protected JpaBaseConfiguration(DataSource dataSource, JpaProperties properties,
-			ObjectProvider<JtaTransactionManager> jtaTransactionManager,
-			ObjectProvider<TransactionManagerCustomizers> transactionManagerCustomizers) {
+			ObjectProvider<JtaTransactionManager> jtaTransactionManager) {
 		this.dataSource = dataSource;
 		this.properties = properties;
 		this.jtaTransactionManager = jtaTransactionManager.getIfAvailable();
-		this.transactionManagerCustomizers = transactionManagerCustomizers
-				.getIfAvailable();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PlatformTransactionManager transactionManager() {
+	public PlatformTransactionManager transactionManager(
+			ObjectProvider<TransactionManagerCustomizers> transactionManagerCustomizers) {
 		JpaTransactionManager transactionManager = new JpaTransactionManager();
-		if (this.transactionManagerCustomizers != null) {
-			this.transactionManagerCustomizers.customize(transactionManager);
-		}
+		transactionManagerCustomizers
+				.ifAvailable((customizers) -> customizers.customize(transactionManager));
 		return transactionManager;
 	}
 
@@ -211,6 +207,7 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
 	@ConditionalOnClass(WebMvcConfigurer.class)
 	@ConditionalOnMissingBean({ OpenEntityManagerInViewInterceptor.class,
 			OpenEntityManagerInViewFilter.class })
+	@ConditionalOnMissingFilterBean(OpenEntityManagerInViewFilter.class)
 	@ConditionalOnProperty(prefix = "spring.jpa", name = "open-in-view", havingValue = "true", matchIfMissing = true)
 	protected static class JpaWebConfiguration {
 

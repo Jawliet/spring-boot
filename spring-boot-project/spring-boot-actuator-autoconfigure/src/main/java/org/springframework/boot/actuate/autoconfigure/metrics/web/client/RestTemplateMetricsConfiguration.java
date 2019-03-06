@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.boot.actuate.metrics.web.client.DefaultRestTemplateExchangeTagsProvider;
 import org.springframework.boot.actuate.metrics.web.client.MetricsRestTemplateCustomizer;
 import org.springframework.boot.actuate.metrics.web.client.RestTemplateExchangeTagsProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -33,29 +35,27 @@ import org.springframework.web.client.RestTemplate;
  *
  * @author Jon Schneider
  * @author Phillip Webb
+ * @author Raheela Aslam
  */
 @Configuration
 @ConditionalOnClass(RestTemplate.class)
+@ConditionalOnBean(RestTemplateBuilder.class)
 class RestTemplateMetricsConfiguration {
-
-	private final MetricsProperties properties;
-
-	RestTemplateMetricsConfiguration(MetricsProperties properties) {
-		this.properties = properties;
-	}
 
 	@Bean
 	@ConditionalOnMissingBean(RestTemplateExchangeTagsProvider.class)
-	public DefaultRestTemplateExchangeTagsProvider restTemplateTagConfigurer() {
+	public DefaultRestTemplateExchangeTagsProvider restTemplateExchangeTagsProvider() {
 		return new DefaultRestTemplateExchangeTagsProvider();
 	}
 
 	@Bean
 	public MetricsRestTemplateCustomizer metricsRestTemplateCustomizer(
 			MeterRegistry meterRegistry,
-			RestTemplateExchangeTagsProvider restTemplateTagConfigurer) {
-		return new MetricsRestTemplateCustomizer(meterRegistry, restTemplateTagConfigurer,
-				this.properties.getWeb().getClient().getRequestsMetricName());
+			RestTemplateExchangeTagsProvider restTemplateExchangeTagsProvider,
+			MetricsProperties properties) {
+		return new MetricsRestTemplateCustomizer(meterRegistry,
+				restTemplateExchangeTagsProvider,
+				properties.getWeb().getClient().getRequestsMetricName());
 	}
 
 }

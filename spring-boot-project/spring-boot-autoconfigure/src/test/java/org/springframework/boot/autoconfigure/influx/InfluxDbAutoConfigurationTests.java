@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import retrofit2.Retrofit;
 
-import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.test.rule.OutputCapture;
+import org.springframework.boot.testsupport.rule.OutputCapture;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class InfluxDbAutoConfigurationTests {
 
 	@Rule
-	public OutputCapture output = new OutputCapture();
+	public final OutputCapture output = new OutputCapture();
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(InfluxDbAutoConfiguration.class));
@@ -87,41 +87,10 @@ public class InfluxDbAutoConfigurationTests {
 				});
 	}
 
-	@Test
-	public void influxDbWithOkHttpClientBuilderProviderIgnoreOkHttpClientBuilder() {
-		this.contextRunner
-				.withUserConfiguration(CustomOkHttpClientBuilderConfig.class,
-						CustomOkHttpClientBuilderProviderConfig.class)
-				.withPropertyValues("spring.influx.url=http://localhost")
-				.run((context) -> {
-					assertThat(context.getBeansOfType(InfluxDB.class)).hasSize(1);
-					int readTimeout = getReadTimeoutProperty(context);
-					assertThat(readTimeout).isEqualTo(40_000);
-					assertThat(this.output.toString()).doesNotContain(
-							"InfluxDB client customizations using a OkHttpClient.Builder is deprecated");
-				});
-	}
-
-	@Test
-	@Deprecated
-	public void influxDbWithOkHttpClientBuilder() {
-		this.contextRunner.withUserConfiguration(CustomOkHttpClientBuilderConfig.class)
-				.withPropertyValues("spring.influx.url=http://localhost")
-				.run((context) -> {
-					assertThat(context.getBeansOfType(InfluxDB.class)).hasSize(1);
-					int readTimeout = getReadTimeoutProperty(context);
-					assertThat(readTimeout).isEqualTo(30_000);
-					assertThat(this.output.toString()).contains(
-							"InfluxDB client customizations using a OkHttpClient.Builder is deprecated");
-				});
-	}
-
 	private int getReadTimeoutProperty(AssertableApplicationContext context) {
 		InfluxDB influxDB = context.getBean(InfluxDB.class);
-		Retrofit retrofit = (Retrofit) new DirectFieldAccessor(influxDB)
-				.getPropertyValue("retrofit");
-		OkHttpClient callFactory = (OkHttpClient) new DirectFieldAccessor(retrofit)
-				.getPropertyValue("callFactory");
+		Retrofit retrofit = (Retrofit) ReflectionTestUtils.getField(influxDB, "retrofit");
+		OkHttpClient callFactory = (OkHttpClient) retrofit.callFactory();
 		return callFactory.readTimeoutMillis();
 	}
 
@@ -131,16 +100,6 @@ public class InfluxDbAutoConfigurationTests {
 		@Bean
 		public InfluxDbOkHttpClientBuilderProvider influxDbOkHttpClientBuilderProvider() {
 			return () -> new OkHttpClient.Builder().readTimeout(40, TimeUnit.SECONDS);
-		}
-
-	}
-
-	@Configuration
-	static class CustomOkHttpClientBuilderConfig {
-
-		@Bean
-		public OkHttpClient.Builder builder() {
-			return new OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS);
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.springframework.boot.actuate.health.HealthStatusHttpMapper;
 import org.springframework.boot.actuate.health.HealthWebEndpointResponseMapper;
 import org.springframework.boot.actuate.health.OrderedHealthAggregator;
 import org.springframework.boot.actuate.health.ReactiveHealthEndpointWebExtension;
-import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.actuate.health.ReactiveHealthIndicatorRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -69,24 +68,20 @@ class HealthEndpointWebExtensionConfiguration {
 	@Configuration
 	@ConditionalOnWebApplication(type = Type.REACTIVE)
 	@ConditionalOnSingleCandidate(ReactiveHealthIndicatorRegistry.class)
+	@ConditionalOnEnabledEndpoint(endpoint = HealthEndpoint.class)
 	static class ReactiveWebHealthConfiguration {
-
-		private final ReactiveHealthIndicator reactiveHealthIndicator;
-
-		ReactiveWebHealthConfiguration(ObjectProvider<HealthAggregator> healthAggregator,
-				ReactiveHealthIndicatorRegistry registry) {
-			this.reactiveHealthIndicator = new CompositeReactiveHealthIndicator(
-					healthAggregator.getIfAvailable(OrderedHealthAggregator::new),
-					registry);
-		}
 
 		@Bean
 		@ConditionalOnMissingBean
-		@ConditionalOnEnabledEndpoint
 		@ConditionalOnBean(HealthEndpoint.class)
 		public ReactiveHealthEndpointWebExtension reactiveHealthEndpointWebExtension(
+				ObjectProvider<HealthAggregator> healthAggregator,
+				ReactiveHealthIndicatorRegistry registry,
 				HealthWebEndpointResponseMapper responseMapper) {
-			return new ReactiveHealthEndpointWebExtension(this.reactiveHealthIndicator,
+			return new ReactiveHealthEndpointWebExtension(
+					new CompositeReactiveHealthIndicator(
+							healthAggregator.getIfAvailable(OrderedHealthAggregator::new),
+							registry),
 					responseMapper);
 		}
 
@@ -94,11 +89,11 @@ class HealthEndpointWebExtensionConfiguration {
 
 	@Configuration
 	@ConditionalOnWebApplication(type = Type.SERVLET)
+	@ConditionalOnEnabledEndpoint(endpoint = HealthEndpoint.class)
 	static class ServletWebHealthConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		@ConditionalOnEnabledEndpoint
 		@ConditionalOnBean(HealthEndpoint.class)
 		public HealthEndpointWebExtension healthEndpointWebExtension(
 				HealthEndpoint healthEndpoint,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -776,7 +776,7 @@ public class RabbitProperties {
 		 * Name of the default queue to receive messages from when none is specified
 		 * explicitly.
 		 */
-		private String queue;
+		private String defaultReceiveQueue;
 
 		public Retry getRetry() {
 			return this.retry;
@@ -822,12 +822,12 @@ public class RabbitProperties {
 			this.routingKey = routingKey;
 		}
 
-		public String getQueue() {
-			return this.queue;
+		public String getDefaultReceiveQueue() {
+			return this.defaultReceiveQueue;
 		}
 
-		public void setQueue(String queue) {
-			this.queue = queue;
+		public void setDefaultReceiveQueue(String defaultReceiveQueue) {
+			this.defaultReceiveQueue = defaultReceiveQueue;
 		}
 
 	}

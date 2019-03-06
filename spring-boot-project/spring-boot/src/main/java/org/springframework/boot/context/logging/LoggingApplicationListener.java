@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,8 @@ import org.springframework.util.StringUtils;
  * {@literal java -jar myapp.jar [--debug | --trace]}). If you prefer to ignore these
  * properties you can set {@link #setParseArgs(boolean) parseArgs} to {@code false}.
  * <p>
- * By default, log output is only written to the console. If a log file is required the
- * {@code logging.path} and {@code logging.file} properties can be used.
+ * By default, log output is only written to the console. If a log file is required, the
+ * {@code logging.file.path} and {@code logging.file.name} properties can be used.
  * <p>
  * Some system properties may be set as side effects, and these can be useful if the
  * logging configuration supports placeholders (i.e. log4j or logback):
@@ -131,6 +131,8 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 		loggers.add("web", "org.springframework.http");
 		loggers.add("web", "org.springframework.web");
 		loggers.add("web", "org.springframework.boot.actuate.endpoint.web");
+		loggers.add("web",
+				"org.springframework.boot.web.servlet.ServletContextInitializerBeans");
 		loggers.add("sql", "org.springframework.jdbc.core");
 		loggers.add("sql", "org.hibernate.SQL");
 		DEFAULT_GROUP_LOGGERS = Collections.unmodifiableMap(loggers);
@@ -318,12 +320,10 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 	}
 
 	protected void initializeLogLevel(LoggingSystem system, LogLevel level) {
-		List<String> loggers = LOG_LEVEL_LOGGERS.get(level);
-		if (loggers != null) {
-			for (String logger : loggers) {
-				system.setLogLevel(logger, level);
-			}
-		}
+		LOG_LEVEL_LOGGERS.getOrDefault(level, Collections.emptyList()).stream()
+				.flatMap((logger) -> DEFAULT_GROUP_LOGGERS
+						.getOrDefault(logger, Collections.singletonList(logger)).stream())
+				.forEach((logger) -> system.setLogLevel(logger, level));
 	}
 
 	protected void setLogLevels(LoggingSystem system, Environment environment) {
@@ -365,15 +365,16 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 			system.setLogLevel(name, coerceLogLevel(level));
 		}
 		catch (RuntimeException ex) {
-			this.logger.error("Cannot set level: " + level + " for '" + name + "'");
+			this.logger.error("Cannot set level '" + level + "' for '" + name + "'");
 		}
 	}
 
 	private LogLevel coerceLogLevel(String level) {
-		if ("false".equalsIgnoreCase(level)) {
+		String trimmedLevel = level.trim();
+		if ("false".equalsIgnoreCase(trimmedLevel)) {
 			return LogLevel.OFF;
 		}
-		return LogLevel.valueOf(level.toUpperCase(Locale.ENGLISH));
+		return LogLevel.valueOf(trimmedLevel.toUpperCase(Locale.ENGLISH));
 	}
 
 	private void registerShutdownHookIfNecessary(Environment environment,

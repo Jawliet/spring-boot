@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class TomcatWebServerFactoryCustomizer implements
 						tomcatProperties.getMaxThreads()));
 		propertyMapper.from(tomcatProperties::getMinSpareThreads).when(this::isPositive)
 				.to((minSpareThreads) -> customizeMinThreads(factory, minSpareThreads));
-		propertyMapper.from(this::determineMaxHttpHeaderSize).whenNonNull()
+		propertyMapper.from(this.serverProperties.getMaxHttpHeaderSize()).whenNonNull()
 				.asInt(DataSize::toBytes).when(this::isPositive)
 				.to((maxHttpHeaderSize) -> customizeMaxHttpHeaderSize(factory,
 						maxHttpHeaderSize));
@@ -108,19 +108,14 @@ public class TomcatWebServerFactoryCustomizer implements
 				.to((maxConnections) -> customizeMaxConnections(factory, maxConnections));
 		propertyMapper.from(tomcatProperties::getAcceptCount).when(this::isPositive)
 				.to((acceptCount) -> customizeAcceptCount(factory, acceptCount));
+		propertyMapper.from(tomcatProperties::getProcessorCache).when(this::isPositive)
+				.to((processorCache) -> customizeProcessorCache(factory, processorCache));
 		customizeStaticResources(factory);
 		customizeErrorReportValve(properties.getError(), factory);
 	}
 
 	private boolean isPositive(int value) {
 		return value > 0;
-	}
-
-	@SuppressWarnings("deprecation")
-	private DataSize determineMaxHttpHeaderSize() {
-		return (this.serverProperties.getTomcat().getMaxHttpHeaderSize().toBytes() > 0)
-				? this.serverProperties.getTomcat().getMaxHttpHeaderSize()
-				: this.serverProperties.getMaxHttpHeaderSize();
 	}
 
 	private void customizeAcceptCount(ConfigurableTomcatWebServerFactory factory,
@@ -132,6 +127,13 @@ public class TomcatWebServerFactoryCustomizer implements
 				protocol.setAcceptCount(acceptCount);
 			}
 		});
+	}
+
+	private void customizeProcessorCache(ConfigurableTomcatWebServerFactory factory,
+			int processorCache) {
+		factory.addConnectorCustomizers((
+				connector) -> ((AbstractHttp11Protocol<?>) connector.getProtocolHandler())
+						.setProcessorCache(processorCache));
 	}
 
 	private void customizeMaxConnections(ConfigurableTomcatWebServerFactory factory,
@@ -249,6 +251,7 @@ public class TomcatWebServerFactoryCustomizer implements
 		valve.setPrefix(tomcatProperties.getAccesslog().getPrefix());
 		valve.setSuffix(tomcatProperties.getAccesslog().getSuffix());
 		valve.setRenameOnRotate(tomcatProperties.getAccesslog().isRenameOnRotate());
+		valve.setMaxDays(tomcatProperties.getAccesslog().getMaxDays());
 		valve.setFileDateFormat(tomcatProperties.getAccesslog().getFileDateFormat());
 		valve.setRequestAttributesEnabled(
 				tomcatProperties.getAccesslog().isRequestAttributesEnabled());
