@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ public class Binder {
 
 	static {
 		List<BeanBinder> binders = new ArrayList<>();
+		binders.add(new ConstructorParametersBinder());
 		binders.add(new JavaBeanBinder());
 		BEAN_BINDERS = Collections.unmodifiableList(binders);
 	}
@@ -253,7 +254,8 @@ public class Binder {
 	private <T> Object bindObject(ConfigurationPropertyName name, Bindable<T> target,
 			BindHandler handler, Context context, boolean allowRecursiveBinding) {
 		ConfigurationProperty property = findProperty(name, context);
-		if (property == null && containsNoDescendantOf(context.getSources(), name)) {
+		if (property == null && containsNoDescendantOf(context.getSources(), name)
+				&& context.depth != 0) {
 			return null;
 		}
 		AggregateBinder<?> aggregateBinder = getAggregateBinder(target, context);
@@ -329,8 +331,7 @@ public class Binder {
 
 	private Object bindBean(ConfigurationPropertyName name, Bindable<?> target,
 			BindHandler handler, Context context, boolean allowRecursiveBinding) {
-		if (containsNoDescendantOf(context.getSources(), name)
-				|| isUnbindableBean(name, target, context)) {
+		if (isUnbindableBean(name, target, context)) {
 			return null;
 		}
 		Class<?> type = target.getType().resolve(Object.class);

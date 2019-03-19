@@ -42,14 +42,13 @@ import org.springframework.util.StringUtils;
  * @author Stephane Nicoll
  * @since 1.3.0
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass({ Cluster.class })
 @EnableConfigurationProperties(CassandraProperties.class)
 public class CassandraAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@SuppressWarnings("deprecation")
 	public Cluster cassandraCluster(CassandraProperties properties,
 			ObjectProvider<ClusterBuilderCustomizer> builderCustomizers) {
 		PropertyMapper map = PropertyMapper.get();

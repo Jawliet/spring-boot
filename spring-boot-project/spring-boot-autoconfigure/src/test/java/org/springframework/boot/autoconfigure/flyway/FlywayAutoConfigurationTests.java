@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -380,7 +380,7 @@ public class FlywayAutoConfigurationTests {
 				});
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class FlywayDataSourceConfiguration {
 
 		@Bean
@@ -399,7 +399,7 @@ public class FlywayAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class CustomFlywayMigrationInitializer {
 
 		@Bean
@@ -412,7 +412,7 @@ public class FlywayAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class CustomFlywayWithJpaConfiguration {
 
 		private final DataSource dataSource;
@@ -454,7 +454,7 @@ public class FlywayAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CallbackConfiguration {
 
 		@Bean
@@ -478,7 +478,7 @@ public class FlywayAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class LegacyCallbackConfiguration {
 
 		@Bean
@@ -495,7 +495,7 @@ public class FlywayAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class ConfigurationCustomizerConfiguration {
 
 		@Bean

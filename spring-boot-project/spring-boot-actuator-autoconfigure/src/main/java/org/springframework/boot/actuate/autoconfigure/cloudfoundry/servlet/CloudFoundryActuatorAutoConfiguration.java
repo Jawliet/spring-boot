@@ -21,10 +21,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryWebEndpointDiscoverer;
 import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnEnabledEndpoint;
+import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnExposedEndpoint;
 import org.springframework.boot.actuate.autoconfigure.health.HealthEndpointAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.info.InfoEndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.servlet.ServletManagementContextAutoConfiguration;
 import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
 import org.springframework.boot.actuate.endpoint.invoke.ParameterValueMapper;
@@ -36,6 +40,10 @@ import org.springframework.boot.actuate.endpoint.web.annotation.ControllerEndpoi
 import org.springframework.boot.actuate.endpoint.web.annotation.ServletEndpointsSupplier;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.health.HealthEndpointWebExtension;
+import org.springframework.boot.actuate.info.GitInfoContributor;
+import org.springframework.boot.actuate.info.InfoContributor;
+import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.info.InfoPropertiesInfoContributor;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -46,6 +54,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.cloud.CloudPlatform;
+import org.springframework.boot.info.GitProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -66,10 +75,10 @@ import org.springframework.web.servlet.DispatcherServlet;
  * @author Madhura Bhave
  * @since 2.0.0
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "management.cloudfoundry", name = "enabled", matchIfMissing = true)
 @AutoConfigureAfter({ ServletManagementContextAutoConfiguration.class,
-		HealthEndpointAutoConfiguration.class })
+		HealthEndpointAutoConfiguration.class, InfoEndpointAutoConfiguration.class })
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnClass(DispatcherServlet.class)
 @ConditionalOnBean(DispatcherServlet.class)
@@ -79,10 +88,29 @@ public class CloudFoundryActuatorAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnEnabledEndpoint
+	@ConditionalOnExposedEndpoint
 	@ConditionalOnBean({ HealthEndpoint.class, HealthEndpointWebExtension.class })
 	public CloudFoundryHealthEndpointWebExtension cloudFoundryHealthEndpointWebExtension(
 			HealthEndpointWebExtension healthEndpointWebExtension) {
 		return new CloudFoundryHealthEndpointWebExtension(healthEndpointWebExtension);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnEnabledEndpoint
+	@ConditionalOnExposedEndpoint
+	@ConditionalOnBean({ InfoEndpoint.class, GitProperties.class })
+	public CloudFoundryInfoEndpointWebExtension cloudFoundryInfoEndpointWebExtension(
+			GitProperties properties, ObjectProvider<InfoContributor> infoContributors) {
+		List<InfoContributor> contributors = infoContributors.orderedStream()
+				.map((infoContributor) -> {
+					if (infoContributor instanceof GitInfoContributor) {
+						return new GitInfoContributor(properties,
+								InfoPropertiesInfoContributor.Mode.FULL);
+					}
+					return infoContributor;
+				}).collect(Collectors.toList());
+		return new CloudFoundryInfoEndpointWebExtension(new InfoEndpoint(contributors));
 	}
 
 	@Bean
@@ -144,7 +172,7 @@ public class CloudFoundryActuatorAutoConfiguration {
 	 */
 	@ConditionalOnClass(WebSecurity.class)
 	@Order(SecurityProperties.IGNORED_ORDER)
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public static class IgnoredPathsWebSecurityConfigurer
 			implements WebSecurityConfigurer<WebSecurity> {
 

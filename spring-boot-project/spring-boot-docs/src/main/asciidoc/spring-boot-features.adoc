@@ -894,7 +894,17 @@ Using the `@Value("${property}")` annotation to inject configuration properties 
 sometimes be cumbersome, especially if you are working with multiple properties or your
 data is hierarchical in nature. Spring Boot provides an alternative method of working
 with properties that lets strongly typed beans govern and validate the configuration of
-your application, as shown in the following example:
+your application.
+
+TIP: See also the <<boot-features-external-config-vs-value,differences between `@Value`
+and type-safe configuration properties>>.
+
+
+
+[[boot-features-external-config-java-bean-binding]]
+==== JavaBean properties binding
+It is possible to bind a bean declaring standard JavaBean properties as shown in the
+following example:
 
 [source,java,indent=0]
 ----
@@ -958,13 +968,13 @@ The preceding POJO defines the following properties:
 the name of the property. In particular, the return type is not used at all there and
 could have been `SecurityProperties`.
 * `acme.security.password`.
-* `acme.security.roles`, with a collection of `String`.
+* `acme.security.roles`, with a collection of `String` that defaults to `USER`.
 
 [NOTE]
 ====
-Getters and setters are usually mandatory, since binding is through standard Java Beans
-property descriptors, just like in Spring MVC. A setter may be omitted in the following
-cases:
+Such arrangement relies on a default empty constructor and getters and setters are usually
+mandatory, since binding is through standard Java Beans property descriptors, just like in
+Spring MVC. A setter may be omitted in the following cases:
 
 * Maps, as long as they are initialized, need a getter but not necessarily a setter,
 since they can be mutated by the binder.
@@ -984,15 +994,88 @@ Finally, only standard Java Bean properties are considered and binding on static
 properties is not supported.
 ====
 
-TIP: See also the <<boot-features-external-config-vs-value,differences between `@Value`
-and `@ConfigurationProperties`>>.
 
-You also need to list the properties classes to register in the
-`@EnableConfigurationProperties` annotation, as shown in the following example:
+
+[[boot-features-external-config-constructor-binding]]
+==== Constructor binding
+The example in the previous section can be rewritten in an immutable fashion as shown in
+the following example:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	package com.example;
+
+	import java.net.InetAddress;
+	import java.util.List;
+
+	import org.springframework.boot.context.properties.ConfigurationProperties;
+	import org.springframework.boot.context.properties.ConfigurationPropertyDefaultValue;
+
+	@ConfigurationProperties("acme")
+	public class AcmeProperties {
+
+		private final boolean enabled;
+
+		private final InetAddress remoteAddress;
+
+		private final Security security;
+
+		public AcmeProperties(boolean enabled, InetAddress remoteAddress, Security security) {
+			this.enabled = enabled;
+			this.remoteAddress = remoteAddress;
+			this.security = security;
+		}
+
+		public boolean isEnabled() { ... }
+
+		public InetAddress getRemoteAddress() { ... }
+
+		public Security getSecurity() { ... }
+
+		public static class Security {
+
+			private final String username;
+
+			private final String password;
+
+			private final List<String> roles;
+
+			public Security(String username, String password,
+					@ConfigurationPropertyDefaultValue("USER") List<String> roles) {
+				this.username = username;
+				this.password = password;
+				this.roles = roles;
+			}
+
+			public String getUsername() { ... }
+
+			public String getPassword() { ... }
+
+			public List<String> getRoles() { ... }
+
+		}
+
+	}
+----
+
+In this setup one, and only one constructor must be defined with the list of properties
+that you wish to bind and not other properties than the ones in the constructor are bound.
+
+Default values can be specified using `@ConfigurationPropertyDefaultValue` and the same
+conversion service will be applied to coerce the `String` value to the target type of a
+missing property.
+
+
+
+[[boot-features-external-config-enabling]]
+==== Enabling `@ConfigurationProperties`-annotated types
+Spring Boot provides an infrastructure to bind such types and register them as beans
+automatically. Any `@Configuration` class can specify the list of types to process as
+shown in the following example:
+
+[source,java,indent=0]
+----
+	@Configuration(proxyBeanMethods = false)
 	@EnableConfigurationProperties(AcmeProperties.class)
 	public class MyConfiguration {
 	}
@@ -1006,16 +1089,21 @@ specified in the `@ConfigurationProperties` annotation and `<fqn>` is the fully 
 name of the bean. If the annotation does not provide any prefix, only the fully qualified
 name of the bean is used.
 
-The bean name in the example above is `acme-com.example.AcmeProperties`.
+The bean name in the examples above is `acme-com.example.AcmeProperties`.
 ====
 
-Even if the preceding configuration creates a regular bean for `AcmeProperties`, we
-recommend that `@ConfigurationProperties` only deal with the environment and, in
-particular, does not inject other beans from the context. Having said that, the
-`@EnableConfigurationProperties` annotation is _also_ automatically applied to your
-project so that any _existing_ bean annotated with `@ConfigurationProperties` is
-configured from the `Environment`. You could shortcut `MyConfiguration` by making sure
-`AcmeProperties` is already a bean, as shown in the following example:
+We recommend that `@ConfigurationProperties` only deal with the environment and, in
+particular, does not inject other beans from the context. In particular, it is not
+possible to inject other beans using the constructor as this would trigger the constructor
+binder that only deals with the environment.
+
+For corner cases, setter injection can be used or any of the `*Aware` interfaces provided
+by the framework (such as `EnvironmentAware` if you need access to the `Environment`).
+
+If you find using `@EnableConfigurationProperties` tedious, you can also declare a bean
+yourself. For instance, instead of annotating `MyConfiguration` with
+`@EnableConfigurationProperties(AcmeProperties.class)`, you could make `AcmeProperties`
+a bean, as shown in the following example:
 
 [source,java,indent=0]
 ----
@@ -1023,11 +1111,21 @@ configured from the `Environment`. You could shortcut `MyConfiguration` by makin
 	@ConfigurationProperties(prefix="acme")
 	public class AcmeProperties {
 
-		// ... see the preceding example
+			private boolean enabled;
+
+    		private InetAddress remoteAddress;
+
+    		private final Security security = new Security();
+
+			// ... see the preceding JavaBean properties binding example
 
 	}
 ----
 
+
+
+[[boot-features-external-config-using]]
+==== Using `@ConfigurationProperties`-annotated types
 This style of configuration works particularly well with the `SpringApplication` external
 YAML configuration, as shown in the following example:
 
@@ -1096,8 +1194,8 @@ its bean registration, as shown in the following example:
 	}
 ----
 
-Any property defined with the `another` prefix is mapped onto that `AnotherComponent` bean
-in manner similar to the preceding `AcmeProperties` example.
+Any JavaBean property defined with the `another` prefix is mapped onto that
+`AnotherComponent` bean in manner similar to the preceding `AcmeProperties` example.
 
 
 
@@ -1531,7 +1629,7 @@ example:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@Profile("production")
 	public class ProductionConfiguration {
 
@@ -2220,7 +2318,7 @@ If you need to add or customize converters, you can use Spring Boot's
 	import org.springframework.context.annotation.*;
 	import org.springframework.http.converter.*;
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class MyConfiguration {
 
 		@Bean
@@ -2712,7 +2810,7 @@ defined by registering a `WebMvcConfigurer` bean with a customized
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class MyConfiguration {
 
 		@Bean
@@ -2770,7 +2868,7 @@ actual handling of the requests, as shown in the following example:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class RoutingConfiguration {
 
 		@Bean
@@ -2853,7 +2951,7 @@ component, as shown in the following example:
 ----
 	import org.springframework.boot.web.codec.CodecCustomizer;
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class MyConfiguration {
 
 		@Bean
@@ -4870,7 +4968,7 @@ follows:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class SomeConfiguration {
 
 		@Bean(BeanNames.COUCHBASE_CUSTOM_CONVERSIONS)
@@ -5275,7 +5373,7 @@ Then you can define a `@Configuration` class to configure the extra `Bucket` and
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class CouchbaseCacheConfiguration {
 
 		private final Cluster cluster;
@@ -5625,7 +5723,7 @@ For instance, the following example exposes another factory that uses a specific
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class JmsConfiguration {
 
 		@Bean
@@ -5789,7 +5887,7 @@ specific `MessageConverter`:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class RabbitConfiguration {
 
 		@Bean
@@ -6676,8 +6774,8 @@ specific slices>> of an application.
 
 TIP: If you are using JUnit 4, don't forget to also add `@RunWith(SpringRunner.class)` to
 your test, otherwise the annotations will be ignored. If you are using JUnit 5, there's no
-need to add the equivalent `@RunWith(SpringExtension)` as `@SpringBootTest` and the
-other `@…Test` annotations are already annotated with it.
+need to add the equivalent `@RunWith(SpringExtension.class)` as `@SpringBootTest` and
+the other `@…Test` annotations are already annotated with it.
 
 By default, `@SpringBootTest` will not start a server. You can use the `webEnvironment`
 attribute of `@SpringBootTest` to further refine how your tests run:
@@ -7866,7 +7964,7 @@ at the same level as your application, as shown in the following example:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@EnableBatchProcessing
 	public class BatchConfiguration { ... }
 ----
@@ -8231,13 +8329,13 @@ condition, as shown in the following example:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	// Some conditions
 	public class MyAutoConfiguration {
 
 		// Auto-configured beans
 
-		@Configuration
+		@Configuration(proxyBeanMethods = false)
 		@ConditionalOnClass(EmbeddedAcmeService.class)
 		static class EmbeddedConfiguration {
 
@@ -8272,7 +8370,7 @@ method, as shown in the following example:
 
 [source,java,indent=0]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class MyAutoConfiguration {
 
 		@Bean
@@ -8540,7 +8638,7 @@ Overflow] if you need support.
 
 [[boot-features-kotlin-requirements]]
 === Requirements
-Spring Boot supports Kotlin 1.2.x. To use Kotlin, `org.jetbrains.kotlin:kotlin-stdlib` and
+Spring Boot supports Kotlin 1.3.x. To use Kotlin, `org.jetbrains.kotlin:kotlin-stdlib` and
 `org.jetbrains.kotlin:kotlin-reflect` must be present on the classpath. The
 `kotlin-stdlib` variants `kotlin-stdlib-jdk7` and `kotlin-stdlib-jdk8` can also be used.
 
@@ -8643,16 +8741,8 @@ make it possible to take advantage of Kotlin reified type parameters.
 
 [[boot-features-kotlin-dependency-management]]
 === Dependency management
-In order to avoid mixing different version of Kotlin dependencies on the classpath,
-dependency management of the following Kotlin dependencies is provided:
-
- - `kotlin-reflect`
- - `kotlin-runtime`
- - `kotlin-stdlib`
- - `kotlin-stdlib-jdk7`
- - `kotlin-stdlib-jdk8`
- - `kotlin-stdlib-jre7`
- - `kotlin-stdlib-jre8`
+In order to avoid mixing different versions of Kotlin dependencies on the classpath,
+Spring Boot imports the Kotlin BOM.
 
 With Maven, the Kotlin version can be customized via the `kotlin.version` property and
 plugin management is provided for `kotlin-maven-plugin`. With Gradle, the Spring Boot
@@ -8662,35 +8752,29 @@ plugin automatically aligns the `kotlin.version` with the version of the Kotlin 
 
 [[boot-features-kotlin-configuration-properties]]
 === `@ConfigurationProperties`
-`@ConfigurationProperties` currently only works with `lateinit` or nullable `var`
-properties (the former is recommended), since immutable classes initialized by
-constructors are {github-issues}8762[not yet supported].
+`@ConfigurationProperties` supports classes with immutable `val` properties as shown in
+the following example:
 
 [source,kotlin,indent=0]
 ----
 @ConfigurationProperties("example.kotlin")
-class KotlinExampleProperties {
+data class KotlinExampleProperties(
+		val name: String,
+		val description: String,
+		val myService: MyService
+)
 
-	lateinit var name: String
-
-	lateinit var description: String
-
-	val myService = MyService()
-
-	class MyService {
-
-		lateinit var apiToken: String
-
-		lateinit var uri: URI
-
-	}
-
-}
+data class MyService(
+	val apiToken: String,
+	val uri: URI
+)
 ----
 
 TIP: To generate <<appendix.adoc#configuration-metadata-annotation-processor,your own
 metadata>> using the annotation processor, {kotlin-documentation}kapt.html[`kapt` should
-be configured] with the `spring-boot-configuration-processor` dependency.
+be configured] with the `spring-boot-configuration-processor` dependency. Note that some
+features (such as detecting the default value or deperecated items) are not working due
+to limitations in the model kapt provides.
 
 
 [[boot-features-kotlin-testing]]
@@ -8708,7 +8792,7 @@ documentation] for more details. You also need to
 {junit5-documentation}/#writing-tests-test-instance-lifecycle-changing-default[switch test
 instance lifecycle to "per-class"].
 
-To mock Kotlin classes, https://mockk.io/[Mockk] is recommended. If you need the `Mockk`
+To mock Kotlin classes, https://mockk.io/[MockK] is recommended. If you need the `Mockk`
 equivalent of the Mockito specific
 <<boot-features-testing-spring-boot-applications-mocking-beans,`@MockBean` and `@SpyBean`
 annotations>>, you can use https://github.com/Ninja-Squad/springmockk[SpringMockK] which

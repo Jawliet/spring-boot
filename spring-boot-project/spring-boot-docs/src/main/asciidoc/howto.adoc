@@ -1180,7 +1180,7 @@ shown in the following example:
 	}
 ----
 
-JAXB is only available out of the box with Java 8. If you're using a more recent java
+JAXB is only available out of the box with Java 8. If you're using a more recent Java
 generation, add the following dependency to your project:
 
 [source,xml,indent=0,subs="verbatim,quotes,attributes"]
@@ -1902,7 +1902,7 @@ annotation, as shown in the following example:
 
 [source,java,indent=0,subs="verbatim,quotes,attributes"]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@EnableAutoConfiguration
 	@EntityScan(basePackageClasses=City.class)
 	public class Application {
@@ -2082,14 +2082,14 @@ as shown in the following example:
 
 [source,java,indent=0,subs="verbatim,quotes,attributes"]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@EnableJpaRepositories(basePackageClasses = Customer.class,
 			entityManagerFactoryRef = "customerEntityManagerFactory")
 	public class CustomerConfiguration {
 		...
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@EnableJpaRepositories(basePackageClasses = Order.class,
 			entityManagerFactoryRef = "orderEntityManagerFactory")
 	public class OrderConfiguration {
@@ -2600,7 +2600,7 @@ requests, consider adding your own `WebSecurityConfigurerAdapter` that adds the 
 
 [source,java,indent=0,subs="verbatim,quotes,attributes"]
 ----
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	public class SslWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
 		@Override
@@ -2627,7 +2627,7 @@ There are several options for hot reloading. The recommended approach is to use
 additional development-time features, such as support for fast application restarts
 and LiveReload as well as sensible development-time configuration (such as template
 caching). Devtools works by monitoring the classpath for changes. This means that static
-resource changes must be "built" for the change to take affect. By default, this happens
+resource changes must be "built" for the change to take effect. By default, this happens
 automatically in Eclipse when you save your changes. In IntelliJ IDEA, the Make Project
 command triggers the necessary build. Due to the
 <<using-spring-boot.adoc#using-boot-devtools-restart-exclude, default restart

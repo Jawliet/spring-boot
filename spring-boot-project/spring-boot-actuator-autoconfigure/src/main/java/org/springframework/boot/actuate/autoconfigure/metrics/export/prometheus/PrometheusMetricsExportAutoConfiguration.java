@@ -26,6 +26,7 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.PushGateway;
 
 import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnEnabledEndpoint;
+import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnExposedEndpoint;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration;
@@ -51,7 +52,7 @@ import org.springframework.core.env.Environment;
  * @author Jon Schneider
  * @author David J. M. Karlsen
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @AutoConfigureBefore({ CompositeMeterRegistryAutoConfiguration.class,
 		SimpleMetricsExportAutoConfiguration.class })
 @AutoConfigureAfter(MetricsAutoConfiguration.class)
@@ -81,8 +82,9 @@ public class PrometheusMetricsExportAutoConfiguration {
 		return new CollectorRegistry(true);
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnEnabledEndpoint(endpoint = PrometheusScrapeEndpoint.class)
+	@ConditionalOnExposedEndpoint(endpoint = PrometheusScrapeEndpoint.class)
 	public static class PrometheusScrapeEndpointConfiguration {
 
 		@Bean
@@ -98,7 +100,7 @@ public class PrometheusMetricsExportAutoConfiguration {
 	 * Configuration for <a href="https://github.com/prometheus/pushgateway">Prometheus
 	 * Pushgateway</a>.
 	 */
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(PushGateway.class)
 	@ConditionalOnProperty(prefix = "management.metrics.export.prometheus.pushgateway", name = "enabled")
 	public static class PrometheusPushGatewayConfiguration {

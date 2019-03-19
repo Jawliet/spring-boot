@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@ import org.springframework.jms.connection.CachingConnectionFactory;
  * @author Phillip Webb
  * @author Stephane Nicoll
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnMissingBean(ConnectionFactory.class)
 class ArtemisConnectionFactoryConfiguration {
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(CachingConnectionFactory.class)
 	@ConditionalOnProperty(prefix = "spring.artemis.pool", name = "enabled", havingValue = "false", matchIfMissing = true)
 	static class SimpleConnectionFactoryConfiguration {
@@ -84,7 +84,7 @@ class ArtemisConnectionFactoryConfiguration {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass({ JmsPoolConnectionFactory.class, PooledObject.class })
 	static class PooledConnectionFactoryConfiguration {
 

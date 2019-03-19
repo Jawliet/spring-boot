@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,9 +45,9 @@ public enum ManagementPortType {
 	 * Look at the given environment to determine if the {@link ManagementPortType} is
 	 * {@link #DISABLED}, {@link #SAME} or {@link #DIFFERENT}.
 	 * @param environment the Spring environment
-	 * @return {@link #DISABLED} if `management.server.port` is set to a negative value,
-	 * {@link #SAME} if `management.server.port` is not specified or equal to
-	 * `server.port`and {@link #DIFFERENT} otherwise.
+	 * @return {@link #DISABLED} if {@code management.server.port} is set to a negative
+	 * value, {@link #SAME} if {@code management.server.port} is not specified or equal to
+	 * {@code server.port} and {@link #DIFFERENT} otherwise.
 	 * @since 2.1.4
 	 */
 	public static ManagementPortType get(Environment environment) {

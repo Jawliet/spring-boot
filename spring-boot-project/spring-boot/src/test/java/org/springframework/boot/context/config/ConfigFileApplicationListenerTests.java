@@ -330,6 +330,51 @@ public class ConfigFileApplicationListenerTests {
 	}
 
 	@Test
+	public void activeProfilesFromDefaultPropertiesShouldNotTakePrecedence() {
+		this.initializer.setSearchNames("enableprofile");
+		this.environment.getPropertySources()
+				.addLast(new MapPropertySource("defaultProperties",
+						Collections.singletonMap("spring.profiles.active", "dev")));
+		this.initializer.postProcessEnvironment(this.environment, this.application);
+		assertThat(this.environment.getActiveProfiles()).containsExactly("myprofile");
+	}
+
+	@Test
+	public void includedProfilesFromDefaultPropertiesShouldNotTakePrecedence() {
+		TestPropertySourceUtils.addInlinedPropertiesToEnvironment(this.environment,
+				"spring.profiles.active=morespecific");
+		this.environment.getPropertySources()
+				.addLast(new MapPropertySource("defaultProperties",
+						Collections.singletonMap("spring.profiles.include", "dev")));
+		this.initializer.postProcessEnvironment(this.environment, this.application);
+		assertThat(this.environment.getActiveProfiles()).containsExactly("dev",
+				"morespecific", "yetmorespecific");
+	}
+
+	@Test
+	public void activeAndIncludedProfilesFromDefaultProperties() {
+		Map<String, Object> source = new HashMap<>();
+		source.put("spring.profiles.include", "other");
+		source.put("spring.profiles.active", "dev");
+		this.environment.getPropertySources()
+				.addLast(new MapPropertySource("defaultProperties", source));
+		this.initializer.postProcessEnvironment(this.environment, this.application);
+		assertThat(this.environment.getActiveProfiles()).containsExactly("other", "dev");
+	}
+
+	@Test
+	public void activeFromDefaultPropertiesShouldNotApplyIfProfilesHaveBeenActivatedBefore() {
+		Map<String, Object> source = new HashMap<>();
+		source.put("spring.profiles.active", "dev");
+		TestPropertySourceUtils.addInlinedPropertiesToEnvironment(this.environment,
+				"spring.profiles.active=other");
+		this.environment.getPropertySources()
+				.addLast(new MapPropertySource("defaultProperties", source));
+		this.initializer.postProcessEnvironment(this.environment, this.application);
+		assertThat(this.environment.getActiveProfiles()).containsExactly("other");
+	}
+
+	@Test
 	public void loadPropertiesThenProfilePropertiesActivatedInSpringApplication() {
 		// This should be the effect of calling
 		// SpringApplication.setAdditionalProfiles("other")
@@ -998,50 +1043,50 @@ public class ConfigFileApplicationListenerTests {
 		};
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class Config {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource("classpath:/specificlocation.properties")
 	protected static class WithPropertySource {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource("classpath:/${source.location}.properties")
 	protected static class WithPropertySourcePlaceholders {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource(value = "classpath:/specificlocation.properties", name = "foo")
 	protected static class WithPropertySourceAndName {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource("classpath:/enableprofile.properties")
 	protected static class WithPropertySourceInProfile {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource("classpath:/enableprofile-myprofile.properties")
 	@Profile("myprofile")
 	protected static class WithPropertySourceAndProfile {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource({ "classpath:/specificlocation.properties",
 			"classpath:/moreproperties.properties" })
 	protected static class WithPropertySourceMultipleLocations {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@PropertySource(value = { "classpath:/specificlocation.properties",
 			"classpath:/moreproperties.properties" }, name = "foo")
 	protected static class WithPropertySourceMultipleLocationsAndName {

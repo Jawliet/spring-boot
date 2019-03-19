@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.validation.ValidatorFactory;
 
+import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
@@ -418,6 +419,7 @@ public class WebFluxAutoConfigurationTests {
 					assertThat(handlerMap).hasSize(2);
 					for (Object handler : handlerMap.values()) {
 						if (handler instanceof ResourceWebHandler) {
+							Assertions.setExtractBareNamePropertyMethods(false);
 							assertThat(((ResourceWebHandler) handler).getCacheControl())
 									.isEqualToComparingFieldByField(
 											CacheControl.maxAge(5, TimeUnit.SECONDS));
@@ -436,6 +438,7 @@ public class WebFluxAutoConfigurationTests {
 					assertThat(handlerMap).hasSize(2);
 					for (Object handler : handlerMap.values()) {
 						if (handler instanceof ResourceWebHandler) {
+							Assertions.setExtractBareNamePropertyMethods(false);
 							assertThat(((ResourceWebHandler) handler).getCacheControl())
 									.isEqualToComparingFieldByField(
 											CacheControl.maxAge(5, TimeUnit.SECONDS)
@@ -454,7 +457,7 @@ public class WebFluxAutoConfigurationTests {
 		return Collections.emptyMap();
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class CustomArgumentResolvers {
 
 		@Bean
@@ -469,7 +472,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class CustomCodecCustomizers {
 
 		@Bean
@@ -479,7 +482,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class ViewResolvers {
 
 		@Bean
@@ -495,7 +498,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class Config {
 
 		@Bean
@@ -505,7 +508,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class CustomHttpHandler {
 
 		@Bean
@@ -515,7 +518,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class ValidatorWebFluxConfigurer implements WebFluxConfigurer {
 
 		private final Validator validator = mock(Validator.class);
@@ -527,7 +530,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	protected static class ValidatorJsr303WebFluxConfigurer implements WebFluxConfigurer {
 
 		private final LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
@@ -539,7 +542,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CustomJsr303Validator {
 
 		@Bean
@@ -549,7 +552,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CustomSpringValidator {
 
 		@Bean
@@ -559,7 +562,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CustomHiddenHttpMethodFilter {
 
 		@Bean
@@ -569,7 +572,7 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CustomRequestMappingHandlerAdapter {
 
 		@Bean
@@ -591,14 +594,14 @@ public class WebFluxAutoConfigurationTests {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	@Import({ WebFluxAutoConfigurationTests.CustomRequestMappingHandlerMapping.class,
 			WebFluxAutoConfigurationTests.CustomRequestMappingHandlerAdapter.class })
 	static class MultipleWebFluxRegistrations {
 
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CustomRequestMappingHandlerMapping {
 
 		@Bean
