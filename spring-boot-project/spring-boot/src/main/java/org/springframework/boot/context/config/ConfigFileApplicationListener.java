@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -75,7 +75,7 @@ import org.springframework.util.StringUtils;
  * properties from well known file locations. By default properties will be loaded from
  * 'application.properties' and/or 'application.yml' files in the following locations:
  * <ul>
- * <li>file:./config/:</li>
+ * <li>file:./config/</li>
  * <li>file:./</li>
  * <li>classpath:config/</li>
  * <li>classpath:</li>

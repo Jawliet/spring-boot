@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -125,14 +125,14 @@ public class TestRestTemplateTests {
 
 	@Test
 	public void getRootUriRootUriSetViaRestTemplateBuilder() {
-		String rootUri = "http://example.com";
+		String rootUri = "https://example.com";
 		RestTemplateBuilder delegate = new RestTemplateBuilder().rootUri(rootUri);
 		assertThat(new TestRestTemplate(delegate).getRootUri()).isEqualTo(rootUri);
 	}
 
 	@Test
 	public void getRootUriRootUriSetViaLocalHostUriTemplateHandler() {
-		String rootUri = "http://example.com";
+		String rootUri = "https://example.com";
 		TestRestTemplate template = new TestRestTemplate();
 		LocalHostUriTemplateHandler templateHandler = mock(
 				LocalHostUriTemplateHandler.class);

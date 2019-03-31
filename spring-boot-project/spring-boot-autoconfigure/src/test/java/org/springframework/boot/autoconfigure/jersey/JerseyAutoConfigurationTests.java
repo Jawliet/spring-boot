@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,16 @@
 
 package org.springframework.boot.autoconfigure.jersey;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener;
 import org.springframework.boot.logging.LogLevel;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -72,6 +76,48 @@ public class JerseyAutoConfigurationTests {
 				});
 	}
 
+	@Test
+	public void whenJaxbIsAvailableTheObjectMapperIsCustomizedWithAnAnnotationIntrospector() {
+		this.contextRunner
+				.withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
+				.run((context) -> {
+					ObjectMapper objectMapper = context.getBean(ObjectMapper.class);
+					assertThat(objectMapper.getSerializationConfig()
+							.getAnnotationIntrospector().allIntrospectors().stream()
+							.filter(JaxbAnnotationIntrospector.class::isInstance))
+									.hasSize(1);
+				});
+	}
+
+	@Test
+	public void whenJaxbIsNotAvailableTheObjectMapperCustomizationBacksOff() {
+		this.contextRunner
+				.withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
+				.withClassLoader(new FilteredClassLoader("javax.xml.bind.annotation"))
+				.run((context) -> {
+					ObjectMapper objectMapper = context.getBean(ObjectMapper.class);
+					assertThat(objectMapper.getSerializationConfig()
+							.getAnnotationIntrospector().allIntrospectors().stream()
+							.filter(JaxbAnnotationIntrospector.class::isInstance))
+									.isEmpty();
+				});
+	}
+
+	@Test
+	public void whenJacksonJaxbModuleIsNotAvailableTheObjectMapperCustomizationBacksOff() {
+		this.contextRunner
+				.withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
+				.withClassLoader(
+						new FilteredClassLoader(JaxbAnnotationIntrospector.class))
+				.run((context) -> {
+					ObjectMapper objectMapper = context.getBean(ObjectMapper.class);
+					assertThat(objectMapper.getSerializationConfig()
+							.getAnnotationIntrospector().allIntrospectors().stream()
+							.filter(JaxbAnnotationIntrospector.class::isInstance))
+									.isEmpty();
+				});
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	static class ResourceConfigConfiguration {
 
@@ -97,8 +143,7 @@ public class JerseyAutoConfigurationTests {
 
 		@Bean
 		public FilterRegistrationBean<RequestContextFilter> customRequestContextFilterRegistration() {
-			return new FilterRegistrationBean<RequestContextFilter>(
-					new RequestContextFilter());
+			return new FilterRegistrationBean<>(new RequestContextFilter());
 		}
 
 	}
