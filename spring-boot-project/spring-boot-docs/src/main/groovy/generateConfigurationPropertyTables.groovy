@@ -24,7 +24,7 @@ def generateConfigMetadataDocumentation() {
 		builder
 				.addSection("core")
 					.withKeyPrefixes("debug", "trace", "logging", "spring.aop", "spring.application",
-						"spring.autoconfigure", "spring.banner", "spring.beaninfo", "spring.config",
+						"spring.autoconfigure", "spring.banner", "spring.beaninfo", "spring.codec", "spring.config",
 						"spring.info", "spring.jmx", "spring.main", "spring.messages", "spring.pid",
 						"spring.profiles", "spring.quartz", "spring.reactor", "spring.task",
 						"spring.mandatory-file-encoding", "info", "spring.output.ansi.enabled")
@@ -40,6 +40,8 @@ def generateConfigMetadataDocumentation() {
 						"spring.mvc", "spring.resources", "spring.webflux")
 				.addSection("json")
 					.withKeyPrefixes("spring.jackson", "spring.gson")
+				.addSection("rsocket")
+					.withKeyPrefixes("spring.rsocket")
 				.addSection("templating")
 					.withKeyPrefixes("spring.freemarker", "spring.groovy", "spring.mustache", "spring.thymeleaf")
 				.addOverride("spring.groovy.template.configuration", "See GroovyMarkupConfigurer")

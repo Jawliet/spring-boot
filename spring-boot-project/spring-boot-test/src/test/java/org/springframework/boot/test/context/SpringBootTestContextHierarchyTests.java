@@ -16,7 +16,7 @@
 
 package org.springframework.boot.test.context;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.test.context.SpringBootTestContextHierarchyTests.ChildConfiguration;
 import org.springframework.boot.test.context.SpringBootTestContextHierarchyTests.ParentConfiguration;
@@ -26,17 +26,18 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 
 /**
- * Tests for {@link SpringBootTest} and {@link ContextHierarchy}.
+ * Tests for {@link SpringBootTest @SpringBootTest} and
+ * {@link ContextHierarchy @ContextHierarchy}.
  *
  * @author Andy Wilkinson
  */
 @SpringBootTest
 @ContextHierarchy({ @ContextConfiguration(classes = ParentConfiguration.class),
 		@ContextConfiguration(classes = ChildConfiguration.class) })
-public class SpringBootTestContextHierarchyTests {
+class SpringBootTestContextHierarchyTests {
 
 	@Test
-	public void contextLoads() {
+	void contextLoads() {
 
 	}
 

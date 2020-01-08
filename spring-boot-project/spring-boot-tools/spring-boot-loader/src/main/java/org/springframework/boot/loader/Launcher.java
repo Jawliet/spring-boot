@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ package org.springframework.boot.loader;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.springframework.boot.loader.archive.Archive;
@@ -35,6 +37,7 @@ import org.springframework.boot.loader.jar.JarFile;
  *
  * @author Phillip Webb
  * @author Dave Syer
+ * @since 1.0.0
  */
 public abstract class Launcher {
 
@@ -45,8 +48,10 @@ public abstract class Launcher {
 	 * @throws Exception if the application fails to launch
 	 */
 	protected void launch(String[] args) throws Exception {
-		JarFile.registerUrlProtocolHandler();
-		ClassLoader classLoader = createClassLoader(getClassPathArchives());
+		if (supportsNestedJars()) {
+			JarFile.registerUrlProtocolHandler();
+		}
+		ClassLoader classLoader = createClassLoader(getClassPathArchivesIterator());
 		launch(args, getMainClass(), classLoader);
 	}
 
@@ -55,11 +60,24 @@ public abstract class Launcher {
 	 * @param archives the archives
 	 * @return the classloader
 	 * @throws Exception if the classloader cannot be created
+	 * @deprecated since 2.3.0 in favor of {@link #createClassLoader(Iterator)}
 	 */
+	@Deprecated
 	protected ClassLoader createClassLoader(List<Archive> archives) throws Exception {
-		List<URL> urls = new ArrayList<>(archives.size());
-		for (Archive archive : archives) {
-			urls.add(archive.getUrl());
+		return createClassLoader(archives.iterator());
+	}
+
+	/**
+	 * Create a classloader for the specified archives.
+	 * @param archives the archives
+	 * @return the classloader
+	 * @throws Exception if the classloader cannot be created
+	 * @since 2.3.0
+	 */
+	protected ClassLoader createClassLoader(Iterator<Archive> archives) throws Exception {
+		List<URL> urls = new ArrayList<>(50);
+		while (archives.hasNext()) {
+			urls.add(archives.next().getUrl());
 		}
 		return createClassLoader(urls.toArray(new URL[0]));
 	}
@@ -71,7 +89,10 @@ public abstract class Launcher {
 	 * @throws Exception if the classloader cannot be created
 	 */
 	protected ClassLoader createClassLoader(URL[] urls) throws Exception {
-		return new LaunchedURLClassLoader(urls, getClass().getClassLoader());
+		if (supportsNestedJars()) {
+			return new LaunchedURLClassLoader(urls, getClass().getClassLoader());
+		}
+		return new URLClassLoader(urls, getClass().getClassLoader());
 	}
 
 	/**
@@ -81,8 +102,7 @@ public abstract class Launcher {
 	 * @param classLoader the classloader
 	 * @throws Exception if the launch fails
 	 */
-	protected void launch(String[] args, String mainClass, ClassLoader classLoader)
-			throws Exception {
+	protected void launch(String[] args, String mainClass, ClassLoader classLoader) throws Exception {
 		Thread.currentThread().setContextClassLoader(classLoader);
 		createMainMethodRunner(mainClass, args, classLoader).run();
 	}
@@ -94,8 +114,7 @@ public abstract class Launcher {
 	 * @param classLoader the classloader
 	 * @return the main method runner
 	 */
-	protected MainMethodRunner createMainMethodRunner(String mainClass, String[] args,
-			ClassLoader classLoader) {
+	protected MainMethodRunner createMainMethodRunner(String mainClass, String[] args, ClassLoader classLoader) {
 		return new MainMethodRunner(mainClass, args);
 	}
 
@@ -110,8 +129,23 @@ public abstract class Launcher {
 	 * Returns the archives that will be used to construct the class path.
 	 * @return the class path archives
 	 * @throws Exception if the class path archives cannot be obtained
+	 * @since 2.3.0
 	 */
-	protected abstract List<Archive> getClassPathArchives() throws Exception;
+	protected Iterator<Archive> getClassPathArchivesIterator() throws Exception {
+		return getClassPathArchives().iterator();
+	}
+
+	/**
+	 * Returns the archives that will be used to construct the class path.
+	 * @return the class path archives
+	 * @throws Exception if the class path archives cannot be obtained
+	 * @deprecated since 2.3.0 in favor of implementing
+	 * {@link #getClassPathArchivesIterator()}.
+	 */
+	@Deprecated
+	protected List<Archive> getClassPathArchives() throws Exception {
+		throw new IllegalStateException("Unexpected call to getClassPathArchives()");
+	}
 
 	protected final Archive createArchive() throws Exception {
 		ProtectionDomain protectionDomain = getClass().getProtectionDomain();
@@ -123,11 +157,19 @@ public abstract class Launcher {
 		}
 		File root = new File(path);
 		if (!root.exists()) {
-			throw new IllegalStateException(
-					"Unable to determine code source archive from " + root);
+			throw new IllegalStateException("Unable to determine code source archive from " + root);
 		}
-		return (root.isDirectory() ? new ExplodedArchive(root)
-				: new JarFileArchive(root));
+		return (root.isDirectory() ? new ExplodedArchive(root) : new JarFileArchive(root));
+	}
+
+	/**
+	 * Returns if the launcher needs to support fully nested JARs. If this method returns
+	 * {@code false} then only regular JARs are supported and the additional URL and
+	 * ClassLoader support infrastructure will not be installed.
+	 * @return if nested JARs are supported
+	 */
+	protected boolean supportsNestedJars() {
+		return true;
 	}
 
 }

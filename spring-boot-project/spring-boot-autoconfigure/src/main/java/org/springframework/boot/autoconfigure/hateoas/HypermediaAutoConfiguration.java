@@ -32,16 +32,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.client.LinkDiscoverers;
-import org.springframework.hateoas.config.EnableEntityLinks;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.config.EnableHypermediaSupport.HypermediaType;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.plugin.core.Plugin;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Spring HATEOAS's
- * {@link EnableHypermediaSupport}.
+ * {@link EnableHypermediaSupport @EnableHypermediaSupport}.
  *
  * @author Roy Clarkson
  * @author Oliver Gierke
@@ -49,11 +48,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * @since 1.1.0
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnClass({ EntityModel.class, RequestMapping.class, Plugin.class })
+@ConditionalOnClass({ EntityModel.class, RequestMapping.class, RequestMappingHandlerAdapter.class, Plugin.class })
 @ConditionalOnWebApplication
 @AutoConfigureAfter({ WebMvcAutoConfiguration.class, JacksonAutoConfiguration.class,
-		HttpMessageConvertersAutoConfiguration.class,
-		RepositoryRestMvcAutoConfiguration.class })
+		HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class })
 @EnableConfigurationProperties(HateoasProperties.class)
 @Import(HypermediaHttpMessageConverterConfiguration.class)
 public class HypermediaAutoConfiguration {
@@ -63,13 +61,6 @@ public class HypermediaAutoConfiguration {
 	@ConditionalOnClass(ObjectMapper.class)
 	@EnableHypermediaSupport(type = HypermediaType.HAL)
 	protected static class HypermediaConfiguration {
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnMissingBean(EntityLinks.class)
-	@EnableEntityLinks
-	protected static class EntityLinksConfiguration {
 
 	}
 

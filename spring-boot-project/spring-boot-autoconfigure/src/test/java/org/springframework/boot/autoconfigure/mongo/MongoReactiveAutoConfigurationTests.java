@@ -17,6 +17,7 @@
 package org.springframework.boot.autoconfigure.mongo;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.mongodb.MongoClientSettings;
 import com.mongodb.ReadPreference;
@@ -25,7 +26,8 @@ import com.mongodb.connection.StreamFactory;
 import com.mongodb.connection.StreamFactoryFactory;
 import com.mongodb.connection.netty.NettyStreamFactoryFactory;
 import com.mongodb.reactivestreams.client.MongoClient;
-import org.junit.Test;
+import io.netty.channel.EventLoopGroup;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -45,66 +47,64 @@ import static org.mockito.Mockito.mock;
  * @author Mark Paluch
  * @author Stephane Nicoll
  */
-public class MongoReactiveAutoConfigurationTests {
+class MongoReactiveAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withConfiguration(
-					AutoConfigurations.of(MongoReactiveAutoConfiguration.class));
+			.withConfiguration(AutoConfigurations.of(MongoReactiveAutoConfiguration.class));
 
 	@Test
-	public void clientExists() {
-		this.contextRunner
-				.run((context) -> assertThat(context).hasSingleBean(MongoClient.class));
+	void clientExists() {
+		this.contextRunner.run((context) -> assertThat(context).hasSingleBean(MongoClient.class));
 	}
 
 	@Test
-	public void optionsAdded() {
+	void optionsAdded() {
 		this.contextRunner.withPropertyValues("spring.data.mongodb.host:localhost")
 				.withUserConfiguration(OptionsConfig.class)
-				.run((context) -> assertThat(getSettings(context).getSocketSettings()
-						.getReadTimeout(TimeUnit.SECONDS)).isEqualTo(300));
+				.run((context) -> assertThat(getSettings(context).getSocketSettings().getReadTimeout(TimeUnit.SECONDS))
+						.isEqualTo(300));
 	}
 
 	@Test
-	public void optionsAddedButNoHost() {
-		this.contextRunner
-				.withPropertyValues("spring.data.mongodb.uri:mongodb://localhost/test")
+	void optionsAddedButNoHost() {
+		this.contextRunner.withPropertyValues("spring.data.mongodb.uri:mongodb://localhost/test")
 				.withUserConfiguration(OptionsConfig.class)
 				.run((context) -> assertThat(getSettings(context).getReadPreference())
 						.isEqualTo(ReadPreference.nearest()));
 	}
 
 	@Test
-	public void optionsSslConfig() {
-		this.contextRunner
-				.withPropertyValues("spring.data.mongodb.uri:mongodb://localhost/test")
+	void optionsSslConfig() {
+		this.contextRunner.withPropertyValues("spring.data.mongodb.uri:mongodb://localhost/test")
 				.withUserConfiguration(SslOptionsConfig.class).run((context) -> {
 					assertThat(context).hasSingleBean(MongoClient.class);
 					MongoClientSettings settings = getSettings(context);
 					assertThat(settings.getApplicationName()).isEqualTo("test-config");
-					assertThat(settings.getStreamFactoryFactory())
-							.isSameAs(context.getBean("myStreamFactoryFactory"));
+					assertThat(settings.getStreamFactoryFactory()).isSameAs(context.getBean("myStreamFactoryFactory"));
 				});
 	}
 
 	@Test
-	public void nettyStreamFactoryFactoryIsConfiguredAutomatically() {
+	void nettyStreamFactoryFactoryIsConfiguredAutomatically() {
+		AtomicReference<EventLoopGroup> eventLoopGroupReference = new AtomicReference<>();
 		this.contextRunner.run((context) -> {
 			assertThat(context).hasSingleBean(MongoClient.class);
-			assertThat(getSettings(context).getStreamFactoryFactory())
-					.isInstanceOf(NettyStreamFactoryFactory.class);
+			StreamFactoryFactory factory = getSettings(context).getStreamFactoryFactory();
+			assertThat(factory).isInstanceOf(NettyStreamFactoryFactory.class);
+			EventLoopGroup eventLoopGroup = (EventLoopGroup) ReflectionTestUtils.getField(factory, "eventLoopGroup");
+			assertThat(eventLoopGroup.isShutdown()).isFalse();
+			eventLoopGroupReference.set(eventLoopGroup);
 		});
+		assertThat(eventLoopGroupReference.get().isShutdown()).isTrue();
 	}
 
 	@Test
-	public void customizerOverridesAutoConfig() {
-		this.contextRunner.withPropertyValues(
-				"spring.data.mongodb.uri:mongodb://localhost/test?appname=auto-config")
+	void customizerOverridesAutoConfig() {
+		this.contextRunner.withPropertyValues("spring.data.mongodb.uri:mongodb://localhost/test?appname=auto-config")
 				.withUserConfiguration(SimpleCustomizerConfig.class).run((context) -> {
 					assertThat(context).hasSingleBean(MongoClient.class);
 					MongoClientSettings settings = getSettings(context);
-					assertThat(settings.getApplicationName())
-							.isEqualTo("overridden-name");
+					assertThat(settings.getApplicationName()).isEqualTo("overridden-name");
 					assertThat(settings.getStreamFactoryFactory())
 							.isEqualTo(SimpleCustomizerConfig.streamFactoryFactory);
 				});
@@ -113,19 +113,16 @@ public class MongoReactiveAutoConfigurationTests {
 	@SuppressWarnings("deprecation")
 	private MongoClientSettings getSettings(ApplicationContext context) {
 		MongoClient client = context.getBean(MongoClient.class);
-		return (MongoClientSettings) ReflectionTestUtils.getField(client.getSettings(),
-				"wrapped");
+		return (MongoClientSettings) ReflectionTestUtils.getField(client.getSettings(), "wrapped");
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	static class OptionsConfig {
 
 		@Bean
-		public MongoClientSettings mongoClientSettings() {
+		MongoClientSettings mongoClientSettings() {
 			return MongoClientSettings.builder().readPreference(ReadPreference.nearest())
-					.applyToSocketSettings(
-							(socket) -> socket.readTimeout(300, TimeUnit.SECONDS))
-					.build();
+					.applyToSocketSettings((socket) -> socket.readTimeout(300, TimeUnit.SECONDS)).build();
 		}
 
 	}
@@ -134,17 +131,15 @@ public class MongoReactiveAutoConfigurationTests {
 	static class SslOptionsConfig {
 
 		@Bean
-		public MongoClientSettings mongoClientSettings(
-				StreamFactoryFactory streamFactoryFactory) {
+		MongoClientSettings mongoClientSettings(StreamFactoryFactory streamFactoryFactory) {
 			return MongoClientSettings.builder().applicationName("test-config")
 					.streamFactoryFactory(streamFactoryFactory).build();
 		}
 
 		@Bean
-		public StreamFactoryFactory myStreamFactoryFactory() {
+		StreamFactoryFactory myStreamFactoryFactory() {
 			StreamFactoryFactory streamFactoryFactory = mock(StreamFactoryFactory.class);
-			given(streamFactoryFactory.create(any(), any()))
-					.willReturn(mock(StreamFactory.class));
+			given(streamFactoryFactory.create(any(), any())).willReturn(mock(StreamFactory.class));
 			return streamFactoryFactory;
 		}
 
@@ -157,9 +152,8 @@ public class MongoReactiveAutoConfigurationTests {
 				.build();
 
 		@Bean
-		public MongoClientSettingsBuilderCustomizer customizer() {
-			return (clientSettingsBuilder) -> clientSettingsBuilder
-					.applicationName("overridden-name")
+		MongoClientSettingsBuilderCustomizer customizer() {
+			return (clientSettingsBuilder) -> clientSettingsBuilder.applicationName("overridden-name")
 					.streamFactoryFactory(streamFactoryFactory);
 		}
 

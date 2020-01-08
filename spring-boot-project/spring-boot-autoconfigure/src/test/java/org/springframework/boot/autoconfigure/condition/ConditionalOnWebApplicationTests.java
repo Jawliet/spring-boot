@@ -16,72 +16,69 @@
 
 package org.springframework.boot.autoconfigure.condition;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.boot.autoconfigure.web.reactive.MockReactiveWebServerFactory;
 import org.springframework.boot.web.reactive.context.AnnotationConfigReactiveWebApplicationContext;
 import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
+import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.mock.web.MockServletContext;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 /**
- * Tests for {@link ConditionalOnWebApplication}.
+ * Tests for {@link ConditionalOnWebApplication @ConditionalOnWebApplication}.
  *
  * @author Dave Syer
  * @author Stephane Nicoll
  */
-public class ConditionalOnWebApplicationTests {
+class ConditionalOnWebApplicationTests {
 
 	private ConfigurableApplicationContext context;
 
-	@After
-	public void closeContext() {
+	@AfterEach
+	void closeContext() {
 		if (this.context != null) {
 			this.context.close();
 		}
 	}
 
 	@Test
-	public void testWebApplicationWithServletContext() {
-		AnnotationConfigWebApplicationContext ctx = new AnnotationConfigWebApplicationContext();
-		ctx.register(AnyWebApplicationConfiguration.class,
-				ServletWebApplicationConfiguration.class,
+	void testWebApplicationWithServletContext() {
+		AnnotationConfigServletWebApplicationContext ctx = new AnnotationConfigServletWebApplicationContext();
+		ctx.register(AnyWebApplicationConfiguration.class, ServletWebApplicationConfiguration.class,
 				ReactiveWebApplicationConfiguration.class);
 		ctx.setServletContext(new MockServletContext());
 		ctx.refresh();
 		this.context = ctx;
-		assertThat(this.context.getBeansOfType(String.class))
-				.containsExactly(entry("any", "any"), entry("servlet", "servlet"));
+		assertThat(this.context.getBeansOfType(String.class)).containsExactly(entry("any", "any"),
+				entry("servlet", "servlet"));
 	}
 
 	@Test
-	public void testWebApplicationWithReactiveContext() {
+	void testWebApplicationWithReactiveContext() {
 		AnnotationConfigReactiveWebApplicationContext context = new AnnotationConfigReactiveWebApplicationContext();
-		context.register(AnyWebApplicationConfiguration.class,
-				ServletWebApplicationConfiguration.class,
+		context.register(AnyWebApplicationConfiguration.class, ServletWebApplicationConfiguration.class,
 				ReactiveWebApplicationConfiguration.class);
 		context.refresh();
 		this.context = context;
-		assertThat(this.context.getBeansOfType(String.class))
-				.containsExactly(entry("any", "any"), entry("reactive", "reactive"));
+		assertThat(this.context.getBeansOfType(String.class)).containsExactly(entry("any", "any"),
+				entry("reactive", "reactive"));
 	}
 
 	@Test
-	public void testNonWebApplication() {
+	void testNonWebApplication() {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
-		ctx.register(AnyWebApplicationConfiguration.class,
-				ServletWebApplicationConfiguration.class,
+		ctx.register(AnyWebApplicationConfiguration.class, ServletWebApplicationConfiguration.class,
 				ReactiveWebApplicationConfiguration.class);
 		ctx.refresh();
 		this.context = ctx;
@@ -90,10 +87,10 @@ public class ConditionalOnWebApplicationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnWebApplication
-	protected static class AnyWebApplicationConfiguration {
+	static class AnyWebApplicationConfiguration {
 
 		@Bean
-		public String any() {
+		String any() {
 			return "any";
 		}
 
@@ -101,10 +98,10 @@ public class ConditionalOnWebApplicationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnWebApplication(type = Type.SERVLET)
-	protected static class ServletWebApplicationConfiguration {
+	static class ServletWebApplicationConfiguration {
 
 		@Bean
-		public String servlet() {
+		String servlet() {
 			return "servlet";
 		}
 
@@ -112,20 +109,20 @@ public class ConditionalOnWebApplicationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnWebApplication(type = Type.REACTIVE)
-	protected static class ReactiveWebApplicationConfiguration {
+	static class ReactiveWebApplicationConfiguration {
 
 		@Bean
-		public String reactive() {
+		String reactive() {
 			return "reactive";
 		}
 
 		@Bean
-		public ReactiveWebServerFactory reactiveWebServerFactory() {
+		ReactiveWebServerFactory reactiveWebServerFactory() {
 			return new MockReactiveWebServerFactory();
 		}
 
 		@Bean
-		public HttpHandler httpHandler() {
+		HttpHandler httpHandler() {
 			return (request, response) -> Mono.empty();
 		}
 

@@ -50,24 +50,23 @@ import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
  * {@link org.springframework.data.jpa.repository.JpaRepository} configured.
  * <p>
  * Once in effect, the auto-configuration is the equivalent of enabling JPA repositories
- * using the {@link org.springframework.data.jpa.repository.config.EnableJpaRepositories}
- * annotation.
+ * using the {@link EnableJpaRepositories @EnableJpaRepositories} annotation.
  * <p>
  * This configuration class will activate <em>after</em> the Hibernate auto-configuration.
  *
  * @author Phillip Webb
  * @author Josh Long
+ * @since 1.0.0
  * @see EnableJpaRepositories
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnBean(DataSource.class)
 @ConditionalOnClass(JpaRepository.class)
-@ConditionalOnMissingBean({ JpaRepositoryFactoryBean.class,
-		JpaRepositoryConfigExtension.class })
-@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "enabled", havingValue = "true", matchIfMissing = true)
-@Import(JpaRepositoriesAutoConfigureRegistrar.class)
-@AutoConfigureAfter({ HibernateJpaAutoConfiguration.class,
-		TaskExecutionAutoConfiguration.class })
+@ConditionalOnMissingBean({ JpaRepositoryFactoryBean.class, JpaRepositoryConfigExtension.class })
+@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
+@Import(JpaRepositoriesRegistrar.class)
+@AutoConfigureAfter({ HibernateJpaAutoConfiguration.class, TaskExecutionAutoConfiguration.class })
 public class JpaRepositoriesAutoConfiguration {
 
 	@Bean
@@ -75,21 +74,18 @@ public class JpaRepositoriesAutoConfiguration {
 	public EntityManagerFactoryBuilderCustomizer entityManagerFactoryBootstrapExecutorCustomizer(
 			Map<String, AsyncTaskExecutor> taskExecutors) {
 		return (builder) -> {
-			AsyncTaskExecutor bootstrapExecutor = determineBootstrapExecutor(
-					taskExecutors);
+			AsyncTaskExecutor bootstrapExecutor = determineBootstrapExecutor(taskExecutors);
 			if (bootstrapExecutor != null) {
 				builder.setBootstrapExecutor(bootstrapExecutor);
 			}
 		};
 	}
 
-	private AsyncTaskExecutor determineBootstrapExecutor(
-			Map<String, AsyncTaskExecutor> taskExecutors) {
+	private AsyncTaskExecutor determineBootstrapExecutor(Map<String, AsyncTaskExecutor> taskExecutors) {
 		if (taskExecutors.size() == 1) {
 			return taskExecutors.values().iterator().next();
 		}
-		return taskExecutors
-				.get(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME);
+		return taskExecutors.get(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME);
 	}
 
 	private static final class BootstrapExecutorCondition extends AnyNestedCondition {
@@ -98,12 +94,14 @@ public class JpaRepositoriesAutoConfiguration {
 			super(ConfigurationPhase.REGISTER_BEAN);
 		}
 
-		@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "bootstrap-mode", havingValue = "deferred", matchIfMissing = false)
+		@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "bootstrap-mode",
+				havingValue = "deferred", matchIfMissing = false)
 		static class DeferredBootstrapMode {
 
 		}
 
-		@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "bootstrap-mode", havingValue = "lazy", matchIfMissing = false)
+		@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "bootstrap-mode", havingValue = "lazy",
+				matchIfMissing = false)
 		static class LazyBootstrapMode {
 
 		}

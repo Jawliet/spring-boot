@@ -105,15 +105,15 @@ public @interface SpringBootTest {
 	String[] args() default {};
 
 	/**
-	 * The <em>annotated classes</em> to use for loading an
+	 * The <em>component classes</em> to use for loading an
 	 * {@link org.springframework.context.ApplicationContext ApplicationContext}. Can also
 	 * be specified using
 	 * {@link ContextConfiguration#classes() @ContextConfiguration(classes=...)}. If no
 	 * explicit classes are defined the test will look for nested
 	 * {@link Configuration @Configuration} classes, before falling back to a
-	 * {@link SpringBootConfiguration} search.
+	 * {@link SpringBootConfiguration @SpringBootConfiguration} search.
 	 * @see ContextConfiguration#classes()
-	 * @return the annotated classes used to load the application context
+	 * @return the component classes used to load the application context
 	 */
 	Class<?>[] classes() default {};
 
@@ -141,7 +141,7 @@ public @interface SpringBootTest {
 		 * Creates a web application context (reactive or servlet based) and sets a
 		 * {@code server.port=0} {@link Environment} property (which usually triggers
 		 * listening on a random port). Often used in conjunction with a
-		 * {@link LocalServerPort} injected field on the test.
+		 * {@link LocalServerPort @LocalServerPort} injected field on the test.
 		 */
 		RANDOM_PORT(true),
 

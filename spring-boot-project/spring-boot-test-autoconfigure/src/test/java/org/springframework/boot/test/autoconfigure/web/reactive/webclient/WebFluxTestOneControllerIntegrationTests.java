@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,32 @@
 
 package org.springframework.boot.test.autoconfigure.web.reactive.webclient;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 /**
- * Tests for {@link WebFluxTest} when a specific controller is defined.
+ * Tests for {@link WebFluxTest @WebFluxTest} when a specific controller is defined.
  *
  * @author Stephane Nicoll
  */
-@RunWith(SpringRunner.class)
 @WithMockUser
 @WebFluxTest(controllers = ExampleController1.class)
-public class WebFluxTestOneControllerIntegrationTests {
+class WebFluxTestOneControllerIntegrationTests {
 
 	@Autowired
 	private WebTestClient webClient;
 
 	@Test
-	public void shouldFindController() {
-		this.webClient.get().uri("/one").exchange().expectStatus().isOk()
-				.expectBody(String.class).isEqualTo("one");
+	void shouldFindController() {
+		this.webClient.get().uri("/one").exchange().expectStatus().isOk().expectBody(String.class).isEqualTo("one");
 	}
 
 	@Test
-	public void shouldNotScanOtherController() {
+	void shouldNotScanOtherController() {
 		this.webClient.get().uri("/two").exchange().expectStatus().isNotFound();
 	}
 

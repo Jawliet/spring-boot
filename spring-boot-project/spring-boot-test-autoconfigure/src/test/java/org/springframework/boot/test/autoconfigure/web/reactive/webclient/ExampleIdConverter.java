@@ -26,7 +26,7 @@ import org.springframework.core.convert.converter.GenericConverter;
 import org.springframework.stereotype.Component;
 
 /**
- * Example {@link GenericConverter} used with {@link WebFluxTest} tests.
+ * Example {@link GenericConverter} used with {@link WebFluxTest @WebFluxTest} tests.
  *
  * @author Stephane Nicoll
  */
@@ -39,8 +39,7 @@ public class ExampleIdConverter implements GenericConverter {
 	}
 
 	@Override
-	public Object convert(Object source, TypeDescriptor sourceType,
-			TypeDescriptor targetType) {
+	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 		if (source == null) {
 			return null;
 		}

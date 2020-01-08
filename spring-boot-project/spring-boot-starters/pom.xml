@@ -16,6 +16,11 @@
 	<properties>
 		<main.basedir>${basedir}/../..</main.basedir>
 	</properties>
+	<scm>
+		<url>${git.url}</url>
+		<connection>${git.connection}</connection>
+		<developerConnection>${git.developerConnection}</developerConnection>
+	</scm>
 	<modules>
 		<module>spring-boot-starter</module>
 		<module>spring-boot-starter-activemq</module>
@@ -61,6 +66,7 @@
 		<module>spring-boot-starter-parent</module>
 		<module>spring-boot-starter-quartz</module>
 		<module>spring-boot-starter-reactor-netty</module>
+		<module>spring-boot-starter-rsocket</module>
 		<module>spring-boot-starter-security</module>
 		<module>spring-boot-starter-test</module>
 		<module>spring-boot-starter-thymeleaf</module>
@@ -132,6 +138,13 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<configuration>
+					<forceCreation>true</forceCreation>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.basepom.maven</groupId>

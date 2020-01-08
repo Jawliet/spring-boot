@@ -29,8 +29,7 @@ import io.prometheus.client.exporter.PushGateway;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnEnabledEndpoint;
-import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnExposedEndpoint;
+import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration;
@@ -48,6 +47,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.core.log.LogMessage;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for exporting metrics to Prometheus.
@@ -57,12 +57,12 @@ import org.springframework.core.env.Environment;
  * @author David J. M. Karlsen
  */
 @Configuration(proxyBeanMethods = false)
-@AutoConfigureBefore({ CompositeMeterRegistryAutoConfiguration.class,
-		SimpleMetricsExportAutoConfiguration.class })
+@AutoConfigureBefore({ CompositeMeterRegistryAutoConfiguration.class, SimpleMetricsExportAutoConfiguration.class })
 @AutoConfigureAfter(MetricsAutoConfiguration.class)
 @ConditionalOnBean(Clock.class)
 @ConditionalOnClass(PrometheusMeterRegistry.class)
-@ConditionalOnProperty(prefix = "management.metrics.export.prometheus", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "management.metrics.export.prometheus", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @EnableConfigurationProperties(PrometheusProperties.class)
 public class PrometheusMetricsExportAutoConfiguration {
 
@@ -74,9 +74,8 @@ public class PrometheusMetricsExportAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PrometheusMeterRegistry prometheusMeterRegistry(
-			PrometheusConfig prometheusConfig, CollectorRegistry collectorRegistry,
-			Clock clock) {
+	public PrometheusMeterRegistry prometheusMeterRegistry(PrometheusConfig prometheusConfig,
+			CollectorRegistry collectorRegistry, Clock clock) {
 		return new PrometheusMeterRegistry(prometheusConfig, collectorRegistry, clock);
 	}
 
@@ -87,14 +86,12 @@ public class PrometheusMetricsExportAutoConfiguration {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnEnabledEndpoint(endpoint = PrometheusScrapeEndpoint.class)
-	@ConditionalOnExposedEndpoint(endpoint = PrometheusScrapeEndpoint.class)
+	@ConditionalOnAvailableEndpoint(endpoint = PrometheusScrapeEndpoint.class)
 	public static class PrometheusScrapeEndpointConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public PrometheusScrapeEndpoint prometheusEndpoint(
-				CollectorRegistry collectorRegistry) {
+		public PrometheusScrapeEndpoint prometheusEndpoint(CollectorRegistry collectorRegistry) {
 			return new PrometheusScrapeEndpoint(collectorRegistry);
 		}
 
@@ -109,8 +106,7 @@ public class PrometheusMetricsExportAutoConfiguration {
 	@ConditionalOnProperty(prefix = "management.metrics.export.prometheus.pushgateway", name = "enabled")
 	public static class PrometheusPushGatewayConfiguration {
 
-		private static final Log logger = LogFactory
-				.getLog(PrometheusPushGatewayConfiguration.class);
+		private static final Log logger = LogFactory.getLog(PrometheusPushGatewayConfiguration.class);
 
 		/**
 		 * The fallback job name. We use 'spring' since there's a history of Prometheus
@@ -121,18 +117,15 @@ public class PrometheusMetricsExportAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public PrometheusPushGatewayManager prometheusPushGatewayManager(
-				CollectorRegistry collectorRegistry,
+		public PrometheusPushGatewayManager prometheusPushGatewayManager(CollectorRegistry collectorRegistry,
 				PrometheusProperties prometheusProperties, Environment environment) {
-			PrometheusProperties.Pushgateway properties = prometheusProperties
-					.getPushgateway();
+			PrometheusProperties.Pushgateway properties = prometheusProperties.getPushgateway();
 			Duration pushRate = properties.getPushRate();
 			String job = getJob(properties, environment);
 			Map<String, String> groupingKey = properties.getGroupingKey();
 			ShutdownOperation shutdownOperation = properties.getShutdownOperation();
-			return new PrometheusPushGatewayManager(
-					getPushGateway(properties.getBaseUrl()), collectorRegistry, pushRate,
-					job, groupingKey, shutdownOperation);
+			return new PrometheusPushGatewayManager(getPushGateway(properties.getBaseUrl()), collectorRegistry,
+					pushRate, job, groupingKey, shutdownOperation);
 		}
 
 		private PushGateway getPushGateway(String url) {
@@ -140,18 +133,15 @@ public class PrometheusMetricsExportAutoConfiguration {
 				return new PushGateway(new URL(url));
 			}
 			catch (MalformedURLException ex) {
-				logger.warn(String.format(
-						"Invalid PushGateway base url '%s': update your configuration to a valid URL",
-						url));
+				logger.warn(LogMessage
+						.format("Invalid PushGateway base url '%s': update your configuration to a valid URL", url));
 				return new PushGateway(url);
 			}
 		}
 
-		private String getJob(PrometheusProperties.Pushgateway properties,
-				Environment environment) {
+		private String getJob(PrometheusProperties.Pushgateway properties, Environment environment) {
 			String job = properties.getJob();
-			job = (job != null) ? job
-					: environment.getProperty("spring.application.name");
+			job = (job != null) ? job : environment.getProperty("spring.application.name");
 			return (job != null) ? job : FALLBACK_JOB;
 		}
 

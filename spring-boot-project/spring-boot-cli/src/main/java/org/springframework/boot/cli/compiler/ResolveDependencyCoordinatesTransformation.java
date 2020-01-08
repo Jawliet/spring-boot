@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,14 @@ import org.springframework.boot.cli.compiler.grape.DependencyResolutionContext;
 import org.springframework.core.annotation.Order;
 
 /**
- * {@link ASTTransformation} to resolve {@link Grab} artifact coordinates.
+ * {@link ASTTransformation} to resolve {@link Grab @Grab} artifact coordinates.
  *
  * @author Andy Wilkinson
  * @author Phillip Webb
+ * @since 1.0.0
  */
 @Order(ResolveDependencyCoordinatesTransformation.ORDER)
-public class ResolveDependencyCoordinatesTransformation
-		extends AnnotatedNodeASTTransformation {
+public class ResolveDependencyCoordinatesTransformation extends AnnotatedNodeASTTransformation {
 
 	/**
 	 * The order of the transformation.
@@ -47,13 +47,11 @@ public class ResolveDependencyCoordinatesTransformation
 	public static final int ORDER = DependencyManagementBomTransformation.ORDER + 300;
 
 	private static final Set<String> GRAB_ANNOTATION_NAMES = Collections
-			.unmodifiableSet(new HashSet<>(
-					Arrays.asList(Grab.class.getName(), Grab.class.getSimpleName())));
+			.unmodifiableSet(new HashSet<>(Arrays.asList(Grab.class.getName(), Grab.class.getSimpleName())));
 
 	private final DependencyResolutionContext resolutionContext;
 
-	public ResolveDependencyCoordinatesTransformation(
-			DependencyResolutionContext resolutionContext) {
+	public ResolveDependencyCoordinatesTransformation(DependencyResolutionContext resolutionContext) {
 		super(GRAB_ANNOTATION_NAMES, false);
 		this.resolutionContext = resolutionContext;
 	}
@@ -95,12 +93,11 @@ public class ResolveDependencyCoordinatesTransformation
 			module = (String) ((ConstantExpression) expression).getValue();
 		}
 		if (annotation.getMember("group") == null) {
-			setMember(annotation, "group", this.resolutionContext
-					.getArtifactCoordinatesResolver().getGroupId(module));
+			setMember(annotation, "group", this.resolutionContext.getArtifactCoordinatesResolver().getGroupId(module));
 		}
 		if (annotation.getMember("version") == null) {
-			setMember(annotation, "version", this.resolutionContext
-					.getArtifactCoordinatesResolver().getVersion(module));
+			setMember(annotation, "version",
+					this.resolutionContext.getArtifactCoordinatesResolver().getVersion(module));
 		}
 	}
 

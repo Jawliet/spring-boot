@@ -42,8 +42,8 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  */
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureAfter(MetricsAutoConfiguration.class)
-@ConditionalOnClass(value = { Log4j2Metrics.class,
-		LogManager.class }, name = "org.apache.logging.log4j.core.LoggerContext")
+@ConditionalOnClass(value = { Log4j2Metrics.class, LogManager.class },
+		name = "org.apache.logging.log4j.core.LoggerContext")
 @ConditionalOnBean(MeterRegistry.class)
 @Conditional(Log4JCoreLoggerContextCondition.class)
 public class Log4J2MetricsAutoConfiguration {
@@ -57,21 +57,19 @@ public class Log4J2MetricsAutoConfiguration {
 	static class Log4JCoreLoggerContextCondition extends SpringBootCondition {
 
 		@Override
-		public ConditionOutcome getMatchOutcome(ConditionContext context,
-				AnnotatedTypeMetadata metadata) {
+		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 			LoggerContext loggerContext = LogManager.getContext(false);
 			try {
-				if (Class.forName("org.apache.logging.log4j.core.LoggerContext")
-						.isInstance(loggerContext)) {
-					return ConditionOutcome.match(
-							"LoggerContext was an instance of org.apache.logging.log4j.core.LoggerContext");
+				if (Class.forName("org.apache.logging.log4j.core.LoggerContext").isInstance(loggerContext)) {
+					return ConditionOutcome
+							.match("LoggerContext was an instance of org.apache.logging.log4j.core.LoggerContext");
 				}
 			}
 			catch (Throwable ex) {
 				// Continue with no match
 			}
-			return ConditionOutcome.noMatch(
-					"Logger context was not an instance of org.apache.logging.log4j.core.LoggerContext");
+			return ConditionOutcome
+					.noMatch("Logger context was not an instance of org.apache.logging.log4j.core.LoggerContext");
 		}
 
 	}

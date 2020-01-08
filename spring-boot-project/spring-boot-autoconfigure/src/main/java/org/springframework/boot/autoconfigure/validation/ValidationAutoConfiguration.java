@@ -60,11 +60,10 @@ public class ValidationAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public static MethodValidationPostProcessor methodValidationPostProcessor(
-			Environment environment, @Lazy Validator validator) {
+	public static MethodValidationPostProcessor methodValidationPostProcessor(Environment environment,
+			@Lazy Validator validator) {
 		MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
-		boolean proxyTargetClass = environment
-				.getProperty("spring.aop.proxy-target-class", Boolean.class, true);
+		boolean proxyTargetClass = environment.getProperty("spring.aop.proxy-target-class", Boolean.class, true);
 		processor.setProxyTargetClass(proxyTargetClass);
 		processor.setValidator(validator);
 		return processor;

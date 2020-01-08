@@ -27,10 +27,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link ManagementContextConfiguration} for Jersey infrastructure when a separate
- * management context with a web server running on a different port is required.
+ * {@link ManagementContextConfiguration @ManagementContextConfiguration} for Jersey
+ * infrastructure when a separate management context with a web server running on a
+ * different port is required.
  *
  * @author Madhura Bhave
+ * @since 2.1.0
  */
 @ManagementContextConfiguration(ManagementContextType.CHILD)
 @Import(JerseyManagementContextConfiguration.class)

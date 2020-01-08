@@ -21,6 +21,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScanner;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,22 +35,22 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
  * Base configuration class for Spring Data's mongo support.
  *
  * @author Madhura Bhave
+ * @author Artsiom Yudovin
  */
 @Configuration(proxyBeanMethods = false)
 class MongoDataConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MongoMappingContext mongoMappingContext(ApplicationContext applicationContext,
-			MongoProperties properties, MongoCustomConversions conversions)
-			throws ClassNotFoundException {
+	MongoMappingContext mongoMappingContext(ApplicationContext applicationContext, MongoProperties properties,
+			MongoCustomConversions conversions) throws ClassNotFoundException {
+		PropertyMapper mapper = PropertyMapper.get().alwaysApplyingWhenNonNull();
 		MongoMappingContext context = new MongoMappingContext();
-		context.setInitialEntitySet(new EntityScanner(applicationContext)
-				.scan(Document.class, Persistent.class));
+		mapper.from(properties.isAutoIndexCreation()).to(context::setAutoIndexCreation);
+		context.setInitialEntitySet(new EntityScanner(applicationContext).scan(Document.class, Persistent.class));
 		Class<?> strategyClass = properties.getFieldNamingStrategy();
 		if (strategyClass != null) {
-			context.setFieldNamingStrategy(
-					(FieldNamingStrategy) BeanUtils.instantiateClass(strategyClass));
+			context.setFieldNamingStrategy((FieldNamingStrategy) BeanUtils.instantiateClass(strategyClass));
 		}
 		context.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
 		return context;
@@ -57,7 +58,7 @@ class MongoDataConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MongoCustomConversions mongoCustomConversions() {
+	MongoCustomConversions mongoCustomConversions() {
 		return new MongoCustomConversions(Collections.emptyList());
 	}
 

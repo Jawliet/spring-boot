@@ -47,8 +47,7 @@ public class ServletManagementContextAutoConfiguration {
 	}
 
 	@Bean
-	public ManagementServletContext managementServletContext(
-			WebEndpointProperties properties) {
+	public ManagementServletContext managementServletContext(WebEndpointProperties properties) {
 		return properties::getBasePath;
 	}
 
@@ -59,8 +58,7 @@ public class ServletManagementContextAutoConfiguration {
 	protected static class ApplicationContextFilterConfiguration {
 
 		@Bean
-		public ApplicationContextHeaderFilter applicationContextIdFilter(
-				ApplicationContext context) {
+		public ApplicationContextHeaderFilter applicationContextIdFilter(ApplicationContext context) {
 			return new ApplicationContextHeaderFilter(context);
 		}
 

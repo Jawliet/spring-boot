@@ -42,11 +42,13 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @since 1.4.0
+ * @deprecated since 2.2.0 in favor of other auto-configured Elasticsearch clients
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(JestClient.class)
 @EnableConfigurationProperties(JestProperties.class)
 @AutoConfigureAfter(GsonAutoConfiguration.class)
+@Deprecated
 public class JestAutoConfiguration {
 
 	@Bean(destroyMethod = "shutdownClient")
@@ -54,19 +56,16 @@ public class JestAutoConfiguration {
 	public JestClient jestClient(JestProperties properties, ObjectProvider<Gson> gson,
 			ObjectProvider<HttpClientConfigBuilderCustomizer> builderCustomizers) {
 		JestClientFactory factory = new JestClientFactory();
-		factory.setHttpClientConfig(
-				createHttpClientConfig(properties, gson, builderCustomizers));
+		factory.setHttpClientConfig(createHttpClientConfig(properties, gson, builderCustomizers));
 		return factory.getObject();
 	}
 
-	protected HttpClientConfig createHttpClientConfig(JestProperties properties,
-			ObjectProvider<Gson> gson,
+	protected HttpClientConfig createHttpClientConfig(JestProperties properties, ObjectProvider<Gson> gson,
 			ObjectProvider<HttpClientConfigBuilderCustomizer> builderCustomizers) {
-		HttpClientConfig.Builder builder = new HttpClientConfig.Builder(
-				properties.getUris());
+		HttpClientConfig.Builder builder = new HttpClientConfig.Builder(properties.getUris());
 		PropertyMapper map = PropertyMapper.get();
-		map.from(properties::getUsername).whenHasText().to((username) -> builder
-				.defaultCredentials(username, properties.getPassword()));
+		map.from(properties::getUsername).whenHasText()
+				.to((username) -> builder.defaultCredentials(username, properties.getPassword()));
 		Proxy proxy = properties.getProxy();
 		map.from(proxy::getHost).whenHasText().to((host) -> {
 			Assert.notNull(proxy.getPort(), "Proxy port must not be null");
@@ -74,12 +73,9 @@ public class JestAutoConfiguration {
 		});
 		map.from(gson::getIfUnique).whenNonNull().to(builder::gson);
 		map.from(properties::isMultiThreaded).to(builder::multiThreaded);
-		map.from(properties::getConnectionTimeout).whenNonNull().asInt(Duration::toMillis)
-				.to(builder::connTimeout);
-		map.from(properties::getReadTimeout).whenNonNull().asInt(Duration::toMillis)
-				.to(builder::readTimeout);
-		builderCustomizers.orderedStream()
-				.forEach((customizer) -> customizer.customize(builder));
+		map.from(properties::getConnectionTimeout).whenNonNull().asInt(Duration::toMillis).to(builder::connTimeout);
+		map.from(properties::getReadTimeout).whenNonNull().asInt(Duration::toMillis).to(builder::readTimeout);
+		builderCustomizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder.build();
 	}
 

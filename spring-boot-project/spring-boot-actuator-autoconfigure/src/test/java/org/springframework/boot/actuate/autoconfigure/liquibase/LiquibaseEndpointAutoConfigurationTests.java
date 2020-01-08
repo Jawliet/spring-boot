@@ -16,9 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.liquibase;
 
-import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.actuate.liquibase.LiquibaseEndpoint;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -35,93 +34,70 @@ import static org.mockito.Mockito.mock;
  *
  * @author Phillip Webb
  */
-public class LiquibaseEndpointAutoConfigurationTests {
+class LiquibaseEndpointAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withConfiguration(
-					AutoConfigurations.of(LiquibaseEndpointAutoConfiguration.class));
+			.withConfiguration(AutoConfigurations.of(LiquibaseEndpointAutoConfiguration.class));
 
 	@Test
-	public void runShouldHaveEndpointBean() {
-		this.contextRunner
-				.withPropertyValues("management.endpoints.web.exposure.include=liquibase")
-				.withUserConfiguration(LiquibaseConfiguration.class)
-				.run((context) -> assertThat(context)
-						.hasSingleBean(LiquibaseEndpoint.class));
+	void runShouldHaveEndpointBean() {
+		this.contextRunner.withPropertyValues("management.endpoints.web.exposure.include=liquibase")
+				.withBean(SpringLiquibase.class, () -> mock(SpringLiquibase.class))
+				.run((context) -> assertThat(context).hasSingleBean(LiquibaseEndpoint.class));
 	}
 
 	@Test
-	public void runWhenEnabledPropertyIsFalseShouldNotHaveEndpointBean() {
-		this.contextRunner.withUserConfiguration(LiquibaseConfiguration.class)
+	void runWhenEnabledPropertyIsFalseShouldNotHaveEndpointBean() {
+		this.contextRunner.withBean(SpringLiquibase.class, () -> mock(SpringLiquibase.class))
 				.withPropertyValues("management.endpoint.liquibase.enabled:false")
-				.run((context) -> assertThat(context)
-						.doesNotHaveBean(LiquibaseEndpoint.class));
+				.run((context) -> assertThat(context).doesNotHaveBean(LiquibaseEndpoint.class));
 	}
 
 	@Test
-	public void runWhenNotExposedShouldNotHaveEndpointBean() {
-		this.contextRunner.run((context) -> assertThat(context)
-				.doesNotHaveBean(LiquibaseEndpoint.class));
+	void runWhenNotExposedShouldNotHaveEndpointBean() {
+		this.contextRunner.run((context) -> assertThat(context).doesNotHaveBean(LiquibaseEndpoint.class));
 	}
 
 	@Test
-	public void disablesCloseOfDataSourceWhenEndpointIsEnabled() {
-		this.contextRunner
-				.withUserConfiguration(DataSourceClosingLiquibaseConfiguration.class)
-				.withPropertyValues("management.endpoints.web.exposure.include=liquibase")
-				.run((context) -> {
+	void disablesCloseOfDataSourceWhenEndpointIsEnabled() {
+		this.contextRunner.withUserConfiguration(DataSourceClosingLiquibaseConfiguration.class)
+				.withPropertyValues("management.endpoints.web.exposure.include=liquibase").run((context) -> {
 					assertThat(context).hasSingleBean(LiquibaseEndpoint.class);
 					assertThat(context.getBean(DataSourceClosingSpringLiquibase.class))
-							.hasFieldOrPropertyWithValue("closeDataSourceOnceMigrated",
-									false);
+							.hasFieldOrPropertyWithValue("closeDataSourceOnceMigrated", false);
 				});
 	}
 
 	@Test
-	public void doesNotDisableCloseOfDataSourceWhenEndpointIsDisabled() {
-		this.contextRunner
-				.withUserConfiguration(DataSourceClosingLiquibaseConfiguration.class)
-				.withPropertyValues("management.endpoint.liquibase.enabled:false")
-				.run((context) -> {
+	void doesNotDisableCloseOfDataSourceWhenEndpointIsDisabled() {
+		this.contextRunner.withUserConfiguration(DataSourceClosingLiquibaseConfiguration.class)
+				.withPropertyValues("management.endpoint.liquibase.enabled:false").run((context) -> {
 					assertThat(context).doesNotHaveBean(LiquibaseEndpoint.class);
-					DataSourceClosingSpringLiquibase bean = context
-							.getBean(DataSourceClosingSpringLiquibase.class);
-					assertThat(bean).hasFieldOrPropertyWithValue(
-							"closeDataSourceOnceMigrated", true);
+					DataSourceClosingSpringLiquibase bean = context.getBean(DataSourceClosingSpringLiquibase.class);
+					assertThat(bean).hasFieldOrPropertyWithValue("closeDataSourceOnceMigrated", true);
 				});
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	static class LiquibaseConfiguration {
-
-		@Bean
-		public SpringLiquibase liquibase() {
-			return mock(SpringLiquibase.class);
-		}
-
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	static class DataSourceClosingLiquibaseConfiguration {
 
 		@Bean
-		public SpringLiquibase liquibase() {
+		SpringLiquibase liquibase() {
 			return new DataSourceClosingSpringLiquibase() {
 
 				private boolean propertiesSet = false;
 
 				@Override
-				public void setCloseDataSourceOnceMigrated(
-						boolean closeDataSourceOnceMigrated) {
+				public void setCloseDataSourceOnceMigrated(boolean closeDataSourceOnceMigrated) {
 					if (this.propertiesSet) {
-						throw new IllegalStateException("setCloseDataSourceOnceMigrated "
-								+ "invoked after afterPropertiesSet");
+						throw new IllegalStateException(
+								"setCloseDataSourceOnceMigrated invoked after afterPropertiesSet");
 					}
 					super.setCloseDataSourceOnceMigrated(closeDataSourceOnceMigrated);
 				}
 
 				@Override
-				public void afterPropertiesSet() throws LiquibaseException {
+				public void afterPropertiesSet() {
 					this.propertiesSet = true;
 				}
 

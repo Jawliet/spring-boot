@@ -16,14 +16,9 @@
 
 package org.springframework.boot.web.servlet.context;
 
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.function.Supplier;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanNameGenerator;
@@ -38,8 +33,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 /**
  * {@link ServletWebServerApplicationContext} that accepts annotated classes as input - in
@@ -54,15 +47,14 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
  * to deliberately override certain bean definitions via an extra Configuration class.
  *
  * @author Phillip Webb
+ * @since 1.0.0
  * @see #register(Class...)
  * @see #scan(String...)
  * @see ServletWebServerApplicationContext
- * @see AnnotationConfigWebApplicationContext
+ * @see AnnotationConfigServletWebApplicationContext
  */
-public class AnnotationConfigServletWebServerApplicationContext
-		extends ServletWebServerApplicationContext implements AnnotationConfigRegistry {
-
-	private final Log logger = LogFactory.getLog(getClass());
+public class AnnotationConfigServletWebServerApplicationContext extends ServletWebServerApplicationContext
+		implements AnnotationConfigRegistry {
 
 	private final AnnotatedBeanDefinitionReader reader;
 
@@ -71,8 +63,6 @@ public class AnnotationConfigServletWebServerApplicationContext
 	private final Set<Class<?>> annotatedClasses = new LinkedHashSet<>();
 
 	private String[] basePackages;
-
-	private final Set<BeanRegistration> registeredBeans = new LinkedHashSet<>();
 
 	/**
 	 * Create a new {@link AnnotationConfigServletWebServerApplicationContext} that needs
@@ -90,8 +80,7 @@ public class AnnotationConfigServletWebServerApplicationContext
 	 * {@link #register} calls and then manually {@linkplain #refresh refreshed}.
 	 * @param beanFactory the DefaultListableBeanFactory instance to use for this context
 	 */
-	public AnnotationConfigServletWebServerApplicationContext(
-			DefaultListableBeanFactory beanFactory) {
+	public AnnotationConfigServletWebServerApplicationContext(DefaultListableBeanFactory beanFactory) {
 		super(beanFactory);
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
@@ -104,8 +93,7 @@ public class AnnotationConfigServletWebServerApplicationContext
 	 * @param annotatedClasses one or more annotated classes, e.g. {@code @Configuration}
 	 * classes
 	 */
-	public AnnotationConfigServletWebServerApplicationContext(
-			Class<?>... annotatedClasses) {
+	public AnnotationConfigServletWebServerApplicationContext(Class<?>... annotatedClasses) {
 		this();
 		register(annotatedClasses);
 		refresh();
@@ -153,8 +141,7 @@ public class AnnotationConfigServletWebServerApplicationContext
 	public void setBeanNameGenerator(BeanNameGenerator beanNameGenerator) {
 		this.reader.setBeanNameGenerator(beanNameGenerator);
 		this.scanner.setBeanNameGenerator(beanNameGenerator);
-		this.getBeanFactory().registerSingleton(
-				AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR,
+		this.getBeanFactory().registerSingleton(AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR,
 				beanNameGenerator);
 	}
 
@@ -186,8 +173,7 @@ public class AnnotationConfigServletWebServerApplicationContext
 	 */
 	@Override
 	public final void register(Class<?>... annotatedClasses) {
-		Assert.notEmpty(annotatedClasses,
-				"At least one annotated class must be specified");
+		Assert.notEmpty(annotatedClasses, "At least one annotated class must be specified");
 		this.annotatedClasses.addAll(Arrays.asList(annotatedClasses));
 	}
 
@@ -202,45 +188,6 @@ public class AnnotationConfigServletWebServerApplicationContext
 	public final void scan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
 		this.basePackages = basePackages;
-	}
-
-	/**
-	 * Register a bean from the given bean class.
-	 * @param annotatedClass the class of the bean
-	 * @param <T> the type of the bean
-	 * @since 2.2.0
-	 */
-	public final <T> void registerBean(Class<T> annotatedClass) {
-		this.registeredBeans.add(new BeanRegistration(annotatedClass, null, null));
-	}
-
-	/**
-	 * Register a bean from the given bean class, using the given supplier for obtaining a
-	 * new instance (typically declared as a lambda expression or method reference).
-	 * @param annotatedClass the class of the bean
-	 * @param supplier a callback for creating an instance of the bean
-	 * @param <T> the type of the bean
-	 * @since 2.2.0
-	 */
-	public final <T> void registerBean(Class<T> annotatedClass, Supplier<T> supplier) {
-		this.registeredBeans.add(new BeanRegistration(annotatedClass, supplier, null));
-	}
-
-	@Override
-	@SafeVarargs
-	@SuppressWarnings("varargs")
-	public final <T> void registerBean(Class<T> annotatedClass,
-			Class<? extends Annotation>... qualifiers) {
-		this.registeredBeans.add(new BeanRegistration(annotatedClass, null, qualifiers));
-	}
-
-	@Override
-	@SafeVarargs
-	@SuppressWarnings("varargs")
-	public final <T> void registerBean(Class<T> annotatedClass, Supplier<T> supplier,
-			Class<? extends Annotation>... qualifiers) {
-		this.registeredBeans
-				.add(new BeanRegistration(annotatedClass, supplier, qualifiers));
 	}
 
 	@Override
@@ -258,60 +205,6 @@ public class AnnotationConfigServletWebServerApplicationContext
 		if (!this.annotatedClasses.isEmpty()) {
 			this.reader.register(ClassUtils.toClassArray(this.annotatedClasses));
 		}
-		if (!this.registeredBeans.isEmpty()) {
-			registerBeans(this.reader);
-		}
-	}
-
-	private void registerBeans(AnnotatedBeanDefinitionReader reader) {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug("Registering supplied beans: ["
-					+ StringUtils.collectionToCommaDelimitedString(this.registeredBeans)
-					+ "]");
-		}
-		this.registeredBeans.forEach((reg) -> reader.registerBean(reg.getAnnotatedClass(),
-				reg.getSupplier(), reg.getQualifiers()));
-	}
-
-	/**
-	 * Holder for a programmatic bean registration.
-	 *
-	 * @see #registerBean(Class, Class[])
-	 * @see #registerBean(Class, Supplier, Class[])
-	 */
-	private static class BeanRegistration {
-
-		private final Class<?> annotatedClass;
-
-		private final Supplier<?> supplier;
-
-		private final Class<? extends Annotation>[] qualifiers;
-
-		BeanRegistration(Class<?> annotatedClass, Supplier<?> supplier,
-				Class<? extends Annotation>[] qualifiers) {
-			this.annotatedClass = annotatedClass;
-			this.supplier = supplier;
-			this.qualifiers = qualifiers;
-		}
-
-		public Class<?> getAnnotatedClass() {
-			return this.annotatedClass;
-		}
-
-		@SuppressWarnings("rawtypes")
-		public Supplier getSupplier() {
-			return this.supplier;
-		}
-
-		public Class<? extends Annotation>[] getQualifiers() {
-			return this.qualifiers;
-		}
-
-		@Override
-		public String toString() {
-			return this.annotatedClass.getName();
-		}
-
 	}
 
 }

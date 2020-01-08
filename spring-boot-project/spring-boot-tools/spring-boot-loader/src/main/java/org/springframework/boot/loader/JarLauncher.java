@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.boot.loader;
 
 import org.springframework.boot.loader.archive.Archive;
+import org.springframework.boot.loader.archive.Archive.EntryFilter;
 
 /**
  * {@link Launcher} for JAR based archives. This launcher assumes that dependency jars are
@@ -25,12 +26,16 @@ import org.springframework.boot.loader.archive.Archive;
  *
  * @author Phillip Webb
  * @author Andy Wilkinson
+ * @since 1.0.0
  */
 public class JarLauncher extends ExecutableArchiveLauncher {
 
-	static final String BOOT_INF_CLASSES = "BOOT-INF/classes/";
-
-	static final String BOOT_INF_LIB = "BOOT-INF/lib/";
+	static final EntryFilter NESTED_ARCHIVE_ENTRY_FILTER = (entry) -> {
+		if (entry.isDirectory()) {
+			return entry.getName().equals("BOOT-INF/classes/");
+		}
+		return entry.getName().startsWith("BOOT-INF/lib/");
+	};
 
 	public JarLauncher() {
 	}
@@ -40,11 +45,18 @@ public class JarLauncher extends ExecutableArchiveLauncher {
 	}
 
 	@Override
+	protected boolean isPostProcessingClassPathArchives() {
+		return false;
+	}
+
+	@Override
+	protected boolean isSearchCandidate(Archive.Entry entry) {
+		return entry.getName().startsWith("BOOT-INF/");
+	}
+
+	@Override
 	protected boolean isNestedArchive(Archive.Entry entry) {
-		if (entry.isDirectory()) {
-			return entry.getName().equals(BOOT_INF_CLASSES);
-		}
-		return entry.getName().startsWith(BOOT_INF_LIB);
+		return NESTED_ARCHIVE_ENTRY_FILTER.matches(entry);
 	}
 
 	public static void main(String[] args) throws Exception {

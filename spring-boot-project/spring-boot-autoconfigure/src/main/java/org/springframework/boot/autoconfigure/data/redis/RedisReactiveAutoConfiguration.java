@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
@@ -40,8 +41,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
  * @since 2.0.0
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnClass({ ReactiveRedisConnectionFactory.class, ReactiveRedisTemplate.class,
-		Flux.class })
+@ConditionalOnClass({ ReactiveRedisConnectionFactory.class, ReactiveRedisTemplate.class, Flux.class })
 @AutoConfigureAfter(RedisAutoConfiguration.class)
 public class RedisReactiveAutoConfiguration {
 
@@ -49,15 +49,21 @@ public class RedisReactiveAutoConfiguration {
 	@ConditionalOnMissingBean(name = "reactiveRedisTemplate")
 	@ConditionalOnBean(ReactiveRedisConnectionFactory.class)
 	public ReactiveRedisTemplate<Object, Object> reactiveRedisTemplate(
-			ReactiveRedisConnectionFactory reactiveRedisConnectionFactory,
-			ResourceLoader resourceLoader) {
+			ReactiveRedisConnectionFactory reactiveRedisConnectionFactory, ResourceLoader resourceLoader) {
 		JdkSerializationRedisSerializer jdkSerializer = new JdkSerializationRedisSerializer(
 				resourceLoader.getClassLoader());
 		RedisSerializationContext<Object, Object> serializationContext = RedisSerializationContext
-				.newSerializationContext().key(jdkSerializer).value(jdkSerializer)
-				.hashKey(jdkSerializer).hashValue(jdkSerializer).build();
-		return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory,
-				serializationContext);
+				.newSerializationContext().key(jdkSerializer).value(jdkSerializer).hashKey(jdkSerializer)
+				.hashValue(jdkSerializer).build();
+		return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, serializationContext);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(name = "reactiveStringRedisTemplate")
+	@ConditionalOnBean(ReactiveRedisConnectionFactory.class)
+	public ReactiveStringRedisTemplate reactiveStringRedisTemplate(
+			ReactiveRedisConnectionFactory reactiveRedisConnectionFactory) {
+		return new ReactiveStringRedisTemplate(reactiveRedisConnectionFactory);
 	}
 
 }

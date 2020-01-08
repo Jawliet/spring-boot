@@ -16,46 +16,41 @@
 
 package org.springframework.boot.configurationdocs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.configurationmetadata.ConfigurationMetadataProperty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * Tests for {@link ConfigurationTable}.
+ *
  * @author Brian Clozel
  */
-public class ConfigurationTableTests {
+class ConfigurationTableTests {
 
 	private static String NEWLINE = System.lineSeparator();
 
 	@Test
-	public void simpleTable() {
+	void simpleTable() {
 		ConfigurationTable table = new ConfigurationTable("test");
-
 		ConfigurationMetadataProperty first = new ConfigurationMetadataProperty();
 		first.setId("spring.test.prop");
 		first.setDefaultValue("something");
 		first.setDescription("This is a description.");
 		first.setType("java.lang.String");
-
 		ConfigurationMetadataProperty second = new ConfigurationMetadataProperty();
 		second.setId("spring.test.other");
 		second.setDefaultValue("other value");
 		second.setDescription("This is another description.");
 		second.setType("java.lang.String");
-
-		table.addEntry(new SingleKeyEntry(first));
-		table.addEntry(new SingleKeyEntry(second));
-
-		assertThat(table.toAsciidocTable())
-				.isEqualTo("[cols=\"1,1,2\", options=\"header\"]" + NEWLINE + "|==="
-						+ NEWLINE + "|Key|Default Value|Description" + NEWLINE + NEWLINE
-						+ "|`+spring.test.other+`" + NEWLINE + "|`+other value+`"
-						+ NEWLINE + "|+++This is another description.+++" + NEWLINE
-						+ NEWLINE + "|`+spring.test.prop+`" + NEWLINE + "|`+something+`"
-						+ NEWLINE + "|+++This is a description.+++" + NEWLINE + NEWLINE
-						+ "|===" + NEWLINE);
+		table.addEntry(new SingleConfigurationTableEntry(first));
+		table.addEntry(new SingleConfigurationTableEntry(second));
+		assertThat(table.toAsciidocTable()).isEqualTo("[cols=\"1,1,2\", options=\"header\"]" + NEWLINE + "|==="
+				+ NEWLINE + "|Key|Default Value|Description" + NEWLINE + NEWLINE + "|`+spring.test.other+`" + NEWLINE
+				+ "|`+other value+`" + NEWLINE + "|+++This is another description.+++" + NEWLINE + NEWLINE
+				+ "|`+spring.test.prop+`" + NEWLINE + "|`+something+`" + NEWLINE + "|+++This is a description.+++"
+				+ NEWLINE + NEWLINE + "|===" + NEWLINE);
 	}
 
 }

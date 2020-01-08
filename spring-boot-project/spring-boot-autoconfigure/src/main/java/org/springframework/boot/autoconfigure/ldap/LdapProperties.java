@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ public class LdapProperties {
 		Assert.notNull(environment, "Environment must not be null");
 		String localPort = environment.getProperty("local.ldap.port");
 		if (localPort != null) {
-			return Integer.valueOf(localPort);
+			return Integer.parseInt(localPort);
 		}
 		return DEFAULT_PORT;
 	}

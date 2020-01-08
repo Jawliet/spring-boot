@@ -34,7 +34,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.DispatcherServlet;
 
 /**
- * {@link ManagementContextConfiguration} for servlet endpoints.
+ * {@link ManagementContextConfiguration @ManagementContextConfiguration} for servlet
+ * endpoints.
  *
  * @author Phillip Webb
  * @author Andy Wilkinson
@@ -49,8 +50,8 @@ public class ServletEndpointManagementContextConfiguration {
 	public ExposeExcludePropertyEndpointFilter<ExposableServletEndpoint> servletExposeExcludePropertyEndpointFilter(
 			WebEndpointProperties properties) {
 		WebEndpointProperties.Exposure exposure = properties.getExposure();
-		return new ExposeExcludePropertyEndpointFilter<>(ExposableServletEndpoint.class,
-				exposure.getInclude(), exposure.getExclude());
+		return new ExposeExcludePropertyEndpointFilter<>(ExposableServletEndpoint.class, exposure.getInclude(),
+				exposure.getExclude());
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -58,12 +59,9 @@ public class ServletEndpointManagementContextConfiguration {
 	public static class WebMvcServletEndpointManagementContextConfiguration {
 
 		@Bean
-		public ServletEndpointRegistrar servletEndpointRegistrar(
-				WebEndpointProperties properties,
-				ServletEndpointsSupplier servletEndpointsSupplier,
-				DispatcherServletPath dispatcherServletPath) {
-			return new ServletEndpointRegistrar(
-					dispatcherServletPath.getRelativePath(properties.getBasePath()),
+		public ServletEndpointRegistrar servletEndpointRegistrar(WebEndpointProperties properties,
+				ServletEndpointsSupplier servletEndpointsSupplier, DispatcherServletPath dispatcherServletPath) {
+			return new ServletEndpointRegistrar(dispatcherServletPath.getRelativePath(properties.getBasePath()),
 					servletEndpointsSupplier.getEndpoints());
 		}
 
@@ -75,12 +73,9 @@ public class ServletEndpointManagementContextConfiguration {
 	public static class JerseyServletEndpointManagementContextConfiguration {
 
 		@Bean
-		public ServletEndpointRegistrar servletEndpointRegistrar(
-				WebEndpointProperties properties,
-				ServletEndpointsSupplier servletEndpointsSupplier,
-				JerseyApplicationPath jerseyApplicationPath) {
-			return new ServletEndpointRegistrar(
-					jerseyApplicationPath.getRelativePath(properties.getBasePath()),
+		public ServletEndpointRegistrar servletEndpointRegistrar(WebEndpointProperties properties,
+				ServletEndpointsSupplier servletEndpointsSupplier, JerseyApplicationPath jerseyApplicationPath) {
+			return new ServletEndpointRegistrar(jerseyApplicationPath.getRelativePath(properties.getBasePath()),
 					servletEndpointsSupplier.getEndpoints());
 		}
 

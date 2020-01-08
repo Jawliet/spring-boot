@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,15 @@
 
 package org.springframework.boot.test.autoconfigure.web.servlet.mockmvc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.rule.OutputCapture;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,27 +33,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Tests for {@link WebMvcTest} default print output.
+ * Tests for {@link WebMvcTest @WebMvcTest} default print output.
  *
  * @author Phillip Webb
  */
-@RunWith(SpringRunner.class)
 @WebMvcTest
 @WithMockUser
 @AutoConfigureMockMvc(printOnlyOnFailure = false)
-public class WebMvcTestPrintAlwaysIntegrationTests {
-
-	@Rule
-	public OutputCapture output = new OutputCapture();
+@ExtendWith(OutputCaptureExtension.class)
+class WebMvcTestPrintAlwaysIntegrationTests {
 
 	@Autowired
 	private MockMvc mvc;
 
 	@Test
-	public void shouldPrint() throws Exception {
-		this.mvc.perform(get("/one")).andExpect(content().string("one"))
-				.andExpect(status().isOk());
-		assertThat(this.output.toString()).contains("Request URI = /one");
+	void shouldPrint(CapturedOutput output) throws Exception {
+		this.mvc.perform(get("/one")).andExpect(content().string("one")).andExpect(status().isOk());
+		assertThat(output).contains("Request URI = /one");
 	}
 
 }

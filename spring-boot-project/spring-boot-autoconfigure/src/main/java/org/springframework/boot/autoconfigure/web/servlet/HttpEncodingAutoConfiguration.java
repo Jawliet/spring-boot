@@ -38,7 +38,7 @@ import org.springframework.web.filter.CharacterEncodingFilter;
  *
  * @author Stephane Nicoll
  * @author Brian Clozel
- * @since 1.2.0
+ * @since 2.0.0
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(HttpProperties.class)
@@ -68,8 +68,8 @@ public class HttpEncodingAutoConfiguration {
 		return new LocaleCharsetMappingsCustomizer(this.properties);
 	}
 
-	private static class LocaleCharsetMappingsCustomizer implements
-			WebServerFactoryCustomizer<ConfigurableServletWebServerFactory>, Ordered {
+	static class LocaleCharsetMappingsCustomizer
+			implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory>, Ordered {
 
 		private final HttpProperties.Encoding properties;
 
